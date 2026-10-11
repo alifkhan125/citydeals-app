@@ -35,21 +35,10 @@ export default function DealCard({
   onToggleFavorite,
 }: DealCardProps) {
   const { t } = useTranslation();
-  const [favorite, setFavorite] = useState(deal.isFavorite ?? false);
-
-  useEffect(() => {
-    setFavorite(deal.isFavorite ?? false);
-  }, [deal.isFavorite]);
+  const isFavorite = Boolean(deal.isFavorite);
 
   const handleFavoriteToggle = () => {
-    const isAuth = useAuthStore.getState().isAuthenticated;
-    if (!isAuth) {
-      onToggleFavorite?.(deal, favorite);
-      return;
-    }
-    const currentFav = favorite;
-    setFavorite(!currentFav);
-    onToggleFavorite?.(deal, currentFav);
+    onToggleFavorite?.(deal, isFavorite);
   };
 
   const imageSource =
@@ -68,9 +57,9 @@ export default function DealCard({
           className="absolute top-3 right-3 w-10 h-10 rounded-2xl bg-white items-center justify-center z-20 border border-neutral-100"
         >
           <Ionicons
-            name={favorite ? "heart" : "heart-outline"}
+            name={isFavorite ? "heart" : "heart-outline"}
             size={20}
-            color={favorite ? "#ef4444" : "#1e293b"}
+            color={isFavorite ? "#ef4444" : "#1e293b"}
           />
         </TouchableOpacity>
 

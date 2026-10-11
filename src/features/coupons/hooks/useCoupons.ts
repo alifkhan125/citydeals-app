@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { couponsApi } from "../services/couponsApi";
-import { CouponFilterParams } from "../types";
+import { Coupon, CouponFilterParams } from "../types";
 import { toast } from "sonner-native";
 
 import { useAuthStore } from "../../auth/store/useAuthStore";
@@ -78,18 +78,48 @@ export const useToggleSaveCoupon = () => {
         return { couponId, saved: true };
       }
     },
+    onMutate: async ({ couponId, isCurrentlySaved, isSaved }) => {
+      const wasSaved = isCurrentlySaved !== undefined ? isCurrentlySaved : !!isSaved;
+      const willBeSaved = !wasSaved;
+
+      // Cancel outgoing refetches so they don't overwrite optimistic update
+      await queryClient.cancelQueries({ queryKey: SAVED_COUPONS_QUERY_KEY });
+      await queryClient.cancelQueries({ queryKey: COUPONS_QUERY_KEY });
+
+      const previousSaved = queryClient.getQueryData<Coupon[]>(SAVED_COUPONS_QUERY_KEY);
+
+      // Optimistically update saved coupons cache immediately
+      queryClient.setQueryData<Coupon[]>(SAVED_COUPONS_QUERY_KEY, (old = []) => {
+        if (willBeSaved) {
+          if (old.some((c) => c.id === couponId)) return old;
+          const cachedCoupons = queryClient.getQueryData<Coupon[]>(COUPONS_QUERY_KEY) || [];
+          const found = cachedCoupons.find((c) => c.id === couponId);
+          const newSavedItem = found ? { ...found, isSaved: true } : ({ id: couponId, isSaved: true } as Coupon);
+          return [newSavedItem, ...old];
+        } else {
+          return old.filter((c) => c.id !== couponId);
+        }
+      });
+
+      return { previousSaved };
+    },
+    onError: (err: any, _vars, context) => {
+      if (context?.previousSaved) {
+        queryClient.setQueryData(SAVED_COUPONS_QUERY_KEY, context.previousSaved);
+      }
+      const msg = err.response?.data?.message || err.message || "Failed to update saved deal";
+      toast.error(Array.isArray(msg) ? msg[0] : msg);
+    },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: SAVED_COUPONS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: COUPONS_QUERY_KEY });
       if (result.saved) {
         toast.success("Deal saved to your list!");
       } else {
         toast.success("Removed from saved deals");
       }
     },
-    onError: (err: any) => {
-      const msg = err.response?.data?.message || err.message || "Failed to update saved deal";
-      toast.error(Array.isArray(msg) ? msg[0] : msg);
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: SAVED_COUPONS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: COUPONS_QUERY_KEY });
     },
   });
 };

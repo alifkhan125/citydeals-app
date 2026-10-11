@@ -39,13 +39,13 @@ export default function OnboardingScreen() {
       });
     } else {
       useAuthStore.getState().setOnboardingCompleted(true);
-      router.push("/register" as any);
+      router.replace("/(auth)/login" as any);
     }
   };
 
   const handleSkip = () => {
     useAuthStore.getState().setOnboardingCompleted(true);
-    router.push("/register" as any);
+    router.replace("/(auth)/login" as any);
   };
 
   const isLastSlide = currentIndex === ONBOARDING_DATA.length - 1;

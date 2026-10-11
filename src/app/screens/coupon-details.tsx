@@ -200,10 +200,19 @@ export default function CouponDetailsScreen() {
       if (isSaved) {
         await couponsApi.unsaveCoupon(dealId);
         setIsSaved(false);
+        queryClient.setQueryData<Coupon[]>(SAVED_COUPONS_QUERY_KEY, (old = []) =>
+          old.filter((c) => c.id !== dealId)
+        );
         showToast("Coupon removed from saved.");
       } else {
         await couponsApi.saveCoupon(dealId);
         setIsSaved(true);
+        if (coupon) {
+          queryClient.setQueryData<Coupon[]>(SAVED_COUPONS_QUERY_KEY, (old = []) => [
+            { ...coupon, isSaved: true },
+            ...old.filter((c) => c.id !== dealId),
+          ]);
+        }
         showToast("Coupon saved successfully!");
       }
       queryClient.invalidateQueries({ queryKey: SAVED_COUPONS_QUERY_KEY });

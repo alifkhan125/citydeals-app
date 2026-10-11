@@ -119,7 +119,7 @@ export default function NearbyScreen() {
         dealHeading: coupon.title,
         dealDescription: coupon.description,
         image: coupon.imageUrl || require("../../../assets/images/placeholder-deal.jpg"),
-        isFavorite: coupon.isSaved || savedSet.has(coupon.id),
+        isFavorite: isLoggedIn ? savedSet.has(coupon.id) : false,
         merchantName: coupon.merchant?.name || undefined,
         distance: formatDistance(distanceKm),
         distanceKm,
@@ -134,8 +134,8 @@ export default function NearbyScreen() {
     const userLon = coords?.longitude;
     const nearestDeals = [...serverCoupons]
       .map((coupon) => {
-        const rawLat = coupon.area?.latitude ?? coupon.merchant?.latitude;
-        const rawLon = coupon.area?.longitude ?? coupon.merchant?.longitude;
+        const rawLat = coupon.merchant?.latitude ?? coupon.area?.latitude;
+        const rawLon = coupon.merchant?.longitude ?? coupon.area?.longitude;
         const merchantLat = rawLat != null ? parseFloat(String(rawLat)) : NaN;
         const merchantLon = rawLon != null ? parseFloat(String(rawLon)) : NaN;
         const distanceKm =
@@ -222,6 +222,7 @@ export default function NearbyScreen() {
       toast.info("Sign In Required", {
         description: "Please sign in to save your favorite deals.",
       });
+      router.push("/(auth)/login" as any);
       return;
     }
     const isCurrentlySaved =

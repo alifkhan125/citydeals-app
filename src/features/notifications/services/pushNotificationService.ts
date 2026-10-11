@@ -9,11 +9,11 @@ import { ENDPOINTS } from "../../../api/endpoints";
 // Configure how notifications appear when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: false,
-    shouldPlaySound: false,
+    shouldShowAlert: true,
+    shouldPlaySound: true,
     shouldSetBadge: true,
-    shouldShowBanner: false,
-    shouldShowList: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -80,9 +80,11 @@ export async function registerForPushNotificationsAsync(): Promise<
     await Notifications.setNotificationChannelAsync("deals", {
       name: "Deals & Offers",
       description: "Notifications about nearby deals and offers",
-      importance: Notifications.AndroidImportance.HIGH,
+      importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: "#ea580c",
+      enableVibrate: true,
+      showBadge: true,
     });
   }
 

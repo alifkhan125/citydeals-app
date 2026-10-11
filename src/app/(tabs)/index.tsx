@@ -251,6 +251,7 @@ export default function HomeScreen() {
       toast.info(t("home.sign_in_required", "Sign In Required"), {
         description: t("home.save_deal_signin", "Please sign in to save your favorite deals."),
       });
+      router.push("/(auth)/login" as any);
       return;
     }
     const isCurrentlySaved =
@@ -293,8 +294,8 @@ export default function HomeScreen() {
     const userLon = coords?.longitude;
 
     return serverCoupons.map((c) => {
-      const rawLat = c.area?.latitude ?? c.merchant?.latitude;
-      const rawLon = c.area?.longitude ?? c.merchant?.longitude;
+      const rawLat = c.merchant?.latitude ?? c.area?.latitude;
+      const rawLon = c.merchant?.longitude ?? c.area?.longitude;
 
       const distanceMeters =
         rawLat && rawLon && userLat && userLon
@@ -307,7 +308,7 @@ export default function HomeScreen() {
         dealHeading: c.title,
         dealDescription: c.description,
         image: c.imageUrl || require("../../../assets/images/placeholder-deal.jpg"),
-        isFavorite: c.isSaved || savedSet.has(c.id),
+        isFavorite: isLoggedIn ? savedSet.has(c.id) : false,
         distance: formatDistance(distanceMeters ? distanceMeters / 1000 : null) || "",
       };
     });

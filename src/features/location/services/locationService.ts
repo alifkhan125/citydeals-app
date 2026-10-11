@@ -6,6 +6,8 @@ import { useLocationStore } from "../store/useLocationStore";
 import { LocationCoords } from "../types";
 import { areasApi } from "../../areas/services/areasApi";
 
+let foregroundLocationSubscription: Location.LocationSubscription | null = null;
+
 export const formatLocationName = (
   address: Location.LocationGeocodedAddress
 ): string => {
@@ -164,12 +166,46 @@ export const locationService = {
       });
     }
 
-    // Start background location tracking for nearby deals
+    // Immediately check nearby deals for in-app alert & start background tracking
     import("./backgroundLocationTask")
-      .then(({ startBackgroundLocationTracking }) => startBackgroundLocationTracking())
+      .then(({ processNearbyDealsCheck, startBackgroundLocationTracking }) => {
+        processNearbyDealsCheck(coords).catch((e) => console.warn("Nearby check error:", e));
+        locationService.startForegroundProximityWatch().catch((e) =>
+          console.warn("Foreground tracking error:", e)
+        );
+        startBackgroundLocationTracking(true).catch((e) => console.warn("Background tracking error:", e));
+      })
       .catch((err) => {
         console.warn("Failed to start background tracking:", err);
       });
+  },
+
+  startForegroundProximityWatch: async () => {
+    if (foregroundLocationSubscription) return;
+
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status !== Location.PermissionStatus.GRANTED) return;
+
+    const { processNearbyDealsCheck } = await import("./backgroundLocationTask");
+
+    foregroundLocationSubscription = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.High,
+        distanceInterval: 1,
+        timeInterval: 5000,
+      },
+      (position) => {
+        const coords: LocationCoords = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+
+        useLocationStore.getState().setLocation(coords, useLocationStore.getState().locationName, null);
+        processNearbyDealsCheck(coords).catch((err) =>
+          console.warn("Foreground nearby check failed:", err)
+        );
+      }
+    );
   },
 
   syncLocationWithBackend: async (coords: LocationCoords) => {

@@ -1,7 +1,7 @@
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
+import { InteractionManager, Platform } from "react-native";
 import { router } from "expo-router";
 import { apiClient } from "../../../api/client";
 import { ENDPOINTS } from "../../../api/endpoints";
@@ -183,13 +183,17 @@ function handleNotificationResponse(response: Notifications.NotificationResponse
   lastHandledNotificationKey = key;
 
   console.log("[PUSH] Notification tapped, data:", data);
-  navigateToNotificationSource(data);
+  InteractionManager.runAfterInteractions(() => {
+    setTimeout(() => navigateToNotificationSource(data), 150);
+  });
 }
 
 /**
  * Listen for incoming notifications (foreground) and taps (background / killed)
  */
 export function setupNotificationListeners() {
+  let isMounted = true;
+
   // When a notification is received while app is in foreground
   const receivedSubscription =
     Notifications.addNotificationReceivedListener((notification) => {
@@ -201,12 +205,15 @@ export function setupNotificationListeners() {
     Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
 
   Notifications.getLastNotificationResponseAsync().then((response) => {
-    if (response) {
-      setTimeout(() => handleNotificationResponse(response), 250);
+    if (response && isMounted) {
+      setTimeout(() => {
+        if (isMounted) handleNotificationResponse(response);
+      }, 1000);
     }
   });
 
   return () => {
+    isMounted = false;
     receivedSubscription.remove();
     responseSubscription.remove();
   };

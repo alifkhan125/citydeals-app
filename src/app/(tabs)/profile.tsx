@@ -55,7 +55,11 @@ export default function ProfileScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    logoutMutation.mutate(undefined, {
+      onSettled: () => {
+        router.replace("/(auth)/login" as any);
+      },
+    });
   };
 
   const handleGoToAuth = () => {

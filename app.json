@@ -10,7 +10,7 @@
     "ios": {
       "bundleIdentifier": "com.citydeals.app",
       "buildNumber": "1",
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon.png",
       "infoPlist": {
         "UIBackgroundModes": [
           "location",

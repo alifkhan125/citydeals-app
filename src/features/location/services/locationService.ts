@@ -85,15 +85,21 @@ export const locationService = {
         // ignore
       }
 
-      // 2. Fetch current GPS position (fast with balanced accuracy, with fallback)
+      // 2. Fetch current GPS position with highest satellite accuracy (with fallbacks)
       let position: Location.LocationObject | null = null;
       try {
         position = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
+          accuracy: Location.Accuracy.Highest,
         });
       } catch {
-        // Fallback to last known position if immediate GPS lock fails
-        position = await Location.getLastKnownPositionAsync();
+        try {
+          position = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+        } catch {
+          // Fallback to last known position if immediate GPS lock fails
+          position = await Location.getLastKnownPositionAsync();
+        }
       }
 
       if (!position) {
@@ -107,7 +113,7 @@ export const locationService = {
 
       const fallbackLocationName =
         locationStore.locationName ||
-        `Lat: ${coords.latitude.toFixed(2)}, Lon: ${coords.longitude.toFixed(2)}`;
+        `Lat: ${coords.latitude.toFixed(6)}, Lon: ${coords.longitude.toFixed(6)}`;
 
       // Update coordinates immediately so pull-to-refresh is not blocked by
       // reverse geocoding, area resolving, push token fetch, or background task setup.

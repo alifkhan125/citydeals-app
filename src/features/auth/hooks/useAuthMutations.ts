@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { router } from "expo-router";
 import { authApi } from "../services/authApi";
 import { tokenService } from "../services/tokenService";
 import { useAuthStore } from "../store/useAuthStore";
@@ -27,6 +26,7 @@ export const useAuthMutations = () => {
     }
 
     if (redirectPath) {
+      const { router } = await import("expo-router");
       router.replace(redirectPath as any);
     }
   };
@@ -89,18 +89,9 @@ export const useAuthMutations = () => {
       }
     },
     onSettled: async () => {
-      // IMPORTANT: Navigate FIRST while the navigation context still exists,
-      // then clear session. clearSession() sets isAuthenticated=false which
-      // unmounts the profile tab and destroys the navigation context.
-      router.replace("/(auth)/login" as any);
-
-      // Small delay to let navigation commit before we tear down state
-      setTimeout(async () => {
-        queryClient.clear();
-        await tokenService.clearTokens();
-        clearSession();
-      }, 100);
-
+      queryClient.clear();
+      await tokenService.clearTokens();
+      clearSession();
       toast.success("Logged out successfully");
     },
   });

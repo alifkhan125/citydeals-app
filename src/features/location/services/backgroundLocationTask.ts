@@ -69,8 +69,8 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) =>
 
       // 2. Loop through deals and check distance
       for (const deal of savedDeals) {
-        const rawLat = deal.merchant?.latitude ?? deal.area?.latitude;
-        const rawLon = deal.merchant?.longitude ?? deal.area?.longitude;
+        const rawLat = deal.area?.latitude ?? deal.merchant?.latitude;
+        const rawLon = deal.area?.longitude ?? deal.merchant?.longitude;
         
         if (!rawLat || !rawLon) continue;
         

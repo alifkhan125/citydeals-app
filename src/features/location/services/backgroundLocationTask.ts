@@ -24,6 +24,14 @@ async function getNotificationPreferences() {
   }
 }
 
+async function isAppActive() {
+  try {
+    return (await AsyncStorage.getItem('citydeals-app-state')) === 'active';
+  } catch {
+    return false;
+  }
+}
+
 // Helper function to calculate distance in km using Haversine formula
 function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Radius of the earth in km
@@ -50,6 +58,8 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) =>
     if (!currentLocation) return;
 
     try {
+      if (await isAppActive()) return;
+
       const preferences = await getNotificationPreferences();
       if (preferences.notificationsPaused) return;
 

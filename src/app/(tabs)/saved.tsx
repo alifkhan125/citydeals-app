@@ -29,6 +29,7 @@ export default function SavedScreen() {
     data: serverSavedCoupons = [],
     isLoading,
     isRefetching,
+    isError,
     refetch,
   } = useSavedCoupons();
 
@@ -138,6 +139,23 @@ export default function SavedScreen() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#ea580c" />
             <Text style={styles.loadingText}>{t("saved.loading", "Loading your saved coupons...")}</Text>
+          </View>
+        ) : isError ? (
+          <View style={styles.emptyContainer}>
+            <Image
+              source={require("../../../assets/images/coupons-3.png")}
+              style={styles.emptyImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.emptyTitle}>{t("saved.load_failed_title", "Saved coupons could not load")}</Text>
+            <Text style={styles.emptySubtitle}>
+              {t("saved.load_failed_subtitle", "Please check your connection and try again.")}
+            </Text>
+            <PrimaryButton
+              title={t("common.retry", "Retry")}
+              onPress={() => refetch()}
+              className="mt-6 w-full max-w-xs"
+            />
           </View>
         ) : savedDeals.length > 0 ? (
           <View style={styles.feedContainer}>

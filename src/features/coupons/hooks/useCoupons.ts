@@ -32,6 +32,7 @@ export const useSavedCoupons = () => {
     queryKey: SAVED_COUPONS_QUERY_KEY,
     queryFn: couponsApi.getSavedCoupons,
     enabled: isAuthenticated,
+    retry: 1,
     staleTime: 1000 * 60 * 5,
   });
 };

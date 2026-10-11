@@ -33,6 +33,7 @@ export interface User {
   latitude?: number | string | null;
   longitude?: number | string | null;
   address?: string | null;
+  notificationRadiusMeters?: number;
   stats?: UserStats;
 }
 

@@ -37,8 +37,10 @@ export const useMarkAsRead = () => {
 export const useUpdateNotificationSettings = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (notificationsPaused: boolean) =>
-      notificationsApi.updateNotificationSettings({ notificationsPaused }),
+    mutationFn: (payload: {
+      notificationsPaused: boolean;
+      notificationRadiusMeters?: number;
+    }) => notificationsApi.updateNotificationSettings(payload),
     onSuccess: (user) => {
       useAuthStore.getState().updateUser(user);
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });

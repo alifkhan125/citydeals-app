@@ -5,6 +5,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
 
+async function getNotificationPreferences() {
+  try {
+    const rawAuthState = await AsyncStorage.getItem('citydeals-auth-storage');
+    const parsed = rawAuthState ? JSON.parse(rawAuthState) : null;
+    const user = parsed?.state?.user;
+
+    return {
+      notificationsPaused: Boolean(user?.notificationsPaused),
+      radiusMeters: Number(user?.notificationRadiusMeters) || 2000,
+    };
+  } catch {
+    return {
+      notificationsPaused: false,
+      radiusMeters: 2000,
+    };
+  }
+}
+
 // Helper function to calculate distance in km using Haversine formula
 function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Radius of the earth in km
@@ -31,6 +49,9 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) =>
     if (!currentLocation) return;
 
     try {
+      const preferences = await getNotificationPreferences();
+      if (preferences.notificationsPaused) return;
+
       // 1. Fetch saved deals from local storage
       const savedDealsStr = await AsyncStorage.getItem('nearby_deals_cache');
       if (!savedDealsStr) return;
@@ -59,8 +80,8 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) =>
           Number(rawLon)
         );
 
-        // 3. If within 1km
-        if (distance <= 1) {
+        // 3. If within the user's selected notification radius
+        if (distance <= preferences.radiusMeters / 1000) {
           const lastNotified = notifiedDeals[deal.id];
           
           // Only notify if we haven't notified for this deal in the last 24 hours
@@ -69,7 +90,12 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) =>
               content: {
                 title: "Nearby Deal Alert!",
                 body: `You are near a great deal: ${deal.title || 'Special offer'} at ${deal.merchant?.name || 'a nearby store'}!`,
-                data: { dealId: deal.id },
+                data: {
+                  couponId: deal.id,
+                  dealId: deal.id,
+                  sourceType: "NEARBY_DEALS",
+                  radiusMeters: preferences.radiusMeters,
+                },
               },
               trigger: null, // trigger immediately
             });

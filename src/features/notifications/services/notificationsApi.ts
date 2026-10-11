@@ -34,7 +34,12 @@ export const notificationsApi = {
    */
   updateNotificationSettings: async (payload: {
     notificationsPaused: boolean;
-  }): Promise<{ id: string; notificationsPaused: boolean }> => {
+    notificationRadiusMeters?: number;
+  }): Promise<{
+    id: string;
+    notificationsPaused: boolean;
+    notificationRadiusMeters?: number;
+  }> => {
     const { data } = await apiClient.patch<any>(
       ENDPOINTS.NOTIFICATIONS.SETTINGS,
       payload

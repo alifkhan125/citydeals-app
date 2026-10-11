@@ -12,6 +12,11 @@
       "buildNumber": "1",
       "icon": "./assets/expo.icon",
       "infoPlist": {
+        "UIBackgroundModes": [
+          "location",
+          "remote-notification"
+        ],
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow CityDeals to alert you about nearby deals even when the app is in the background.",
         "NSLocationWhenInUseUsageDescription": "Allow CityDeals to access your location to show local deals near you.",
         "NSPhotoLibraryUsageDescription": "Allow CityDeals to access your photo library so you can update your profile picture."
       }

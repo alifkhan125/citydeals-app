@@ -6,23 +6,19 @@ import {
   Modal,
   RefreshControl,
   ScrollView,
-  Switch,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Image } from "expo-image";
 import CurvedHeader from "../../components/CurvedHeader";
-import LanguageBottomSheet from "../../components/LanguageBottomSheet";
+import LanguageBottomSheet, { LANGUAGES } from "../../components/LanguageBottomSheet";
 import { useAuthStore } from "../../features/auth/store/useAuthStore";
 import { useAuthMutations } from "../../features/auth/hooks/useAuthMutations";
 import { useCurrentUser } from "../../features/auth/hooks/useCurrentUser";
 import { useSavedCoupons, useRedeemedCoupons } from "../../features/coupons/hooks/useCoupons";
 import { useShallow } from "zustand/react/shallow";
-import { useUpdateNotificationSettings } from "../../features/notifications/hooks/useNotifications";
 import { useTranslation } from "react-i18next";
-import { LANGUAGES } from "../../components/LanguageBottomSheet";
-
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -47,7 +43,6 @@ export default function ProfileScreen() {
   } = useRedeemedCoupons();
 
   const { logoutMutation } = useAuthMutations();
-  const { mutate: updateNotificationSettings } = useUpdateNotificationSettings();
   const { t, i18n } = useTranslation();
 
   const currentLangLabel = useMemo(() => {
@@ -273,27 +268,31 @@ export default function ProfileScreen() {
             <Feather name="chevron-right" size={20} color="#9ca3af" />
           </TouchableOpacity>
 
-          {/* Push notification */}
-          <View className="bg-white border border-neutral-100 rounded-2xl px-4 h-[60px] flex-row items-center justify-between">
+          {/* Notification settings */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => {
+              if (!isLoggedIn) {
+                router.push("/(auth)/login" as any);
+              } else {
+                router.push("/screens/notification-settings" as any);
+              }
+            }}
+            className="bg-white border border-neutral-100 rounded-2xl px-4 h-[68px] flex-row items-center justify-between"
+          >
             <View className="flex-row items-center flex-1">
               <Feather name="bell" size={20} color="#ea580c" />
-              <Text className="text-neutral-800 font-semibold text-base ml-3.5">
-                Push notification
-              </Text>
+              <View className="ml-3.5 flex-1">
+                <Text className="text-neutral-800 font-semibold text-base">
+                  Notification settings
+                </Text>
+                <Text className="text-neutral-400 text-xs mt-0.5">
+                  {user?.notificationsPaused ? "Paused" : `${user?.notificationRadiusMeters ?? 2000}m radius`}
+                </Text>
+              </View>
             </View>
-            <Switch
-              value={isLoggedIn ? !(user?.notificationsPaused) : false}
-              onValueChange={(val) => {
-                if (!isLoggedIn) {
-                  router.push("/(auth)/login" as any);
-                  return;
-                }
-                updateNotificationSettings(!val);
-              }}
-              trackColor={{ false: "#e2e8f0", true: "#ea580c" }}
-              thumbColor="#ffffff"
-            />
-          </View>
+            <Feather name="chevron-right" size={20} color="#9ca3af" />
+          </TouchableOpacity>
 
           {/* Language */}
           <TouchableOpacity

@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { toast } from "sonner-native";
 import CurvedHeader from "../../components/CurvedHeader";
 import { useAuthStore } from "../../features/auth/store/useAuthStore";
@@ -91,8 +92,13 @@ export default function NotificationSettingsScreen() {
       { notificationsPaused, notificationRadiusMeters },
       {
         onSuccess: async () => {
+          await AsyncStorage.removeItem("notified_deals").catch(() => null);
           if (!notificationsPaused) {
             await syncPushTokenWithBackend().catch(() => null);
+            const { startBackgroundLocationTracking } = await import(
+              "../../features/location/services/backgroundLocationTask"
+            );
+            await startBackgroundLocationTracking(true).catch(() => null);
           }
           toast.success("Notification settings updated");
         },
@@ -112,8 +118,8 @@ export default function NotificationSettingsScreen() {
     }
 
     const meters = Math.round(customUnit === "km" ? parsed * 1000 : parsed);
-    if (meters < 10) {
-      toast.error("Minimum radius is 10m");
+    if (meters < 1) {
+      toast.error("Minimum radius is 1m");
       return;
     }
     if (meters > 50000) {

@@ -247,8 +247,8 @@ function ensureHttps(url?: string | null): string | null {
 
   // Open directions / Map
   const handleOpenMap = () => {
-    const lat = coupon?.merchant?.latitude || coupon?.area?.latitude;
-    const lng = coupon?.merchant?.longitude || coupon?.area?.longitude;
+    const lat = coupon?.area?.latitude || coupon?.merchant?.latitude;
+    const lng = coupon?.area?.longitude || coupon?.merchant?.longitude;
 
     if (lat && lng) {
       const url = Platform.select({

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import DealCard, { DealItem } from "../../components/DealCard";
 import DealCardSkeleton from "../../components/DealCardSkeleton";
@@ -96,8 +97,8 @@ export default function NearbyScreen() {
     const userLon = coords?.longitude;
 
     return serverCoupons.map((coupon) => {
-      const rawLat = coupon.merchant?.latitude ?? coupon.area?.latitude;
-      const rawLon = coupon.merchant?.longitude ?? coupon.area?.longitude;
+      const rawLat = coupon.area?.latitude ?? coupon.merchant?.latitude;
+      const rawLon = coupon.area?.longitude ?? coupon.merchant?.longitude;
 
       const mLat = rawLat != null ? parseFloat(String(rawLat)) : NaN;
       const mLon = rawLon != null ? parseFloat(String(rawLon)) : NaN;
@@ -125,6 +126,36 @@ export default function NearbyScreen() {
       };
     });
   }, [serverCoupons, coords, savedSet]);
+
+  useEffect(() => {
+    if (!serverCoupons || serverCoupons.length === 0) return;
+
+    const userLat = coords?.latitude;
+    const userLon = coords?.longitude;
+    const nearestDeals = [...serverCoupons]
+      .map((coupon) => {
+        const rawLat = coupon.area?.latitude ?? coupon.merchant?.latitude;
+        const rawLon = coupon.area?.longitude ?? coupon.merchant?.longitude;
+        const merchantLat = rawLat != null ? parseFloat(String(rawLat)) : NaN;
+        const merchantLon = rawLon != null ? parseFloat(String(rawLon)) : NaN;
+        const distanceKm =
+          userLat != null &&
+          userLon != null &&
+          Number.isFinite(merchantLat) &&
+          Number.isFinite(merchantLon)
+            ? getDistanceKm(userLat, userLon, merchantLat, merchantLon)
+            : Number.POSITIVE_INFINITY;
+
+        return { coupon, distanceKm };
+      })
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 50)
+      .map((item) => item.coupon);
+
+    AsyncStorage.setItem("nearby_deals_cache", JSON.stringify(nearestDeals)).catch((error) => {
+      console.warn("Failed to cache nearest deals:", error);
+    });
+  }, [serverCoupons, coords]);
 
   const radiusCounts = useMemo<Record<string, number>>(() => {
     const dealsWithDistance = processedDeals.filter(
@@ -203,12 +234,15 @@ export default function NearbyScreen() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await Promise.all([
-      refetchCoupons(),
-      isLoggedIn ? refetchSaved() : Promise.resolve(),
-      refreshLocation(),
-    ]);
-    setIsRefreshing(false);
+    try {
+      await Promise.all([
+        refetchCoupons(),
+        isLoggedIn ? refetchSaved() : Promise.resolve(),
+        refreshLocation(),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleRefreshLocation = async () => {

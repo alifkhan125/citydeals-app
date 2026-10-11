@@ -2,6 +2,7 @@ import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 export const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
 
@@ -118,9 +119,19 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) =>
 });
 
 // Helper to start the background tracking
-export const startBackgroundLocationTracking = async () => {
+export const startBackgroundLocationTracking = async (forceRestart = false) => {
   const { status: foregroundStatus } = await Location.getForegroundPermissionsAsync();
   if (foregroundStatus === 'granted') {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('deals', {
+        name: 'Deals & Offers',
+        description: 'Notifications about nearby deals and offers',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#ea580c',
+      });
+    }
+
     const { status: currentBgStatus } = await Location.getBackgroundPermissionsAsync();
     let backgroundStatus = currentBgStatus;
     
@@ -132,11 +143,15 @@ export const startBackgroundLocationTracking = async () => {
     
     if (backgroundStatus === 'granted') {
       const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
-      if (!isRegistered) {
+      if (isRegistered && forceRestart) {
+        await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+      }
+
+      if (!isRegistered || forceRestart) {
         await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
-          accuracy: Location.Accuracy.Balanced,
-          distanceInterval: 100, // Update every 100 meters
-          deferredUpdatesInterval: 60000, // Process updates every 1 minute
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 10, // Better for 10m/50m testing and close-range alerts
+          deferredUpdatesInterval: 10000,
           showsBackgroundLocationIndicator: true,
           foregroundService: {
             notificationTitle: "Location Tracking",

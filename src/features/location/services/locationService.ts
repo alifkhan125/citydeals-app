@@ -105,51 +105,16 @@ export const locationService = {
         longitude: position.coords.longitude,
       };
 
-      // 3. Reverse geocode to get human-readable address
-      let locationName = "Current Location";
-      let addressDetails: Location.LocationGeocodedAddress | null = null;
+      const fallbackLocationName =
+        locationStore.locationName ||
+        `Lat: ${coords.latitude.toFixed(2)}, Lon: ${coords.longitude.toFixed(2)}`;
 
-      try {
-        const addresses = await Location.reverseGeocodeAsync(coords);
-        if (addresses && addresses.length > 0) {
-          addressDetails = addresses[0];
-          locationName = formatLocationName(addressDetails);
-        } else {
-          locationName = `Lat: ${coords.latitude.toFixed(2)}, Lon: ${coords.longitude.toFixed(2)}`;
-        }
-      } catch (geocodeErr) {
-        console.warn("Reverse geocode failed, using coordinates", geocodeErr);
-        locationName = `Lat: ${coords.latitude.toFixed(2)}, Lon: ${coords.longitude.toFixed(2)}`;
-      }
+      // Update coordinates immediately so pull-to-refresh is not blocked by
+      // reverse geocoding, area resolving, push token fetch, or background task setup.
+      locationStore.setLocation(coords, fallbackLocationName, null);
+      locationService.enrichLocationInBackground(coords);
 
-      // 4. Update local location store with live device coordinates & geocoded name
-      locationStore.setLocation(coords, locationName, addressDetails);
-
-      // 5. Auto resolve closest backend Area
-      try {
-        const resolvedArea = await areasApi.resolveArea(coords);
-        useLocationStore.getState().setMatchedArea(resolvedArea);
-      } catch (areaErr) {
-        console.warn("Failed to resolve nearest area:", areaErr);
-      }
-
-      // 6. If user is logged in, sync location with backend API
-      const authState = useAuthStore.getState();
-      if (authState.isAuthenticated) {
-        locationService.syncLocationWithBackend(coords).catch((err) => {
-          console.warn("Failed to sync location with backend:", err);
-        });
-      }
-
-      // 7. Start background location tracking for nearby deals
-      try {
-        const { startBackgroundLocationTracking } = await import("./backgroundLocationTask");
-        await startBackgroundLocationTracking();
-      } catch (err) {
-        console.warn("Failed to start background tracking:", err);
-      }
-
-      return { coords, locationName, addressDetails };
+      return { coords, locationName: fallbackLocationName, addressDetails: null };
     } catch (err: any) {
       console.warn("Location error:", err);
       locationStore.setError(err.message || "Failed to get location");
@@ -161,6 +126,44 @@ export const locationService = {
     } finally {
       locationStore.setIsLoading(false);
     }
+  },
+
+  enrichLocationInBackground: async (coords: LocationCoords) => {
+    // Reverse geocode to get human-readable address
+    try {
+      const addresses = await Location.reverseGeocodeAsync(coords);
+      if (addresses && addresses.length > 0) {
+        const addressDetails = addresses[0];
+        useLocationStore
+          .getState()
+          .setLocation(coords, formatLocationName(addressDetails), addressDetails);
+      }
+    } catch (geocodeErr) {
+      console.warn("Reverse geocode failed, using coordinates", geocodeErr);
+    }
+
+    // Auto resolve closest backend Area
+    try {
+      const resolvedArea = await areasApi.resolveArea(coords);
+      useLocationStore.getState().setMatchedArea(resolvedArea);
+    } catch (areaErr) {
+      console.warn("Failed to resolve nearest area:", areaErr);
+    }
+
+    // If user is logged in, sync location with backend API
+    const authState = useAuthStore.getState();
+    if (authState.isAuthenticated) {
+      locationService.syncLocationWithBackend(coords).catch((err) => {
+        console.warn("Failed to sync location with backend:", err);
+      });
+    }
+
+    // Start background location tracking for nearby deals
+    import("./backgroundLocationTask")
+      .then(({ startBackgroundLocationTracking }) => startBackgroundLocationTracking())
+      .catch((err) => {
+        console.warn("Failed to start background tracking:", err);
+      });
   },
 
   syncLocationWithBackend: async (coords: LocationCoords) => {

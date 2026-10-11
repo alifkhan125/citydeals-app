@@ -271,14 +271,17 @@ export default function HomeScreen() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await Promise.all([
-      refetchCoupons(),
-      refetchCategories(),
-      isLoggedIn ? refetchSaved() : Promise.resolve(),
-      isLoggedIn ? refetchUser() : Promise.resolve(),
-      isAutoDetect ? refreshLocation() : Promise.resolve(),
-    ]);
-    setIsRefreshing(false);
+    try {
+      await Promise.all([
+        refetchCoupons(),
+        isLoggedIn ? refetchSaved() : Promise.resolve(),
+        isAutoDetect ? refreshLocation() : Promise.resolve(),
+      ]);
+      refetchCategories();
+      if (isLoggedIn) refetchUser();
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const filteredDeals = useMemo(() => {
@@ -290,8 +293,8 @@ export default function HomeScreen() {
     const userLon = coords?.longitude;
 
     return serverCoupons.map((c) => {
-      const rawLat = c.merchant?.latitude ?? c.area?.latitude;
-      const rawLon = c.merchant?.longitude ?? c.area?.longitude;
+      const rawLat = c.area?.latitude ?? c.merchant?.latitude;
+      const rawLon = c.area?.longitude ?? c.merchant?.longitude;
 
       const distanceMeters =
         rawLat && rawLon && userLat && userLon

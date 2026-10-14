@@ -185,15 +185,20 @@ export const startBackgroundLocationTracking = async (forceRestart = false) => {
     }
 
     // Request background permission if possible
-    const { status: currentBgStatus, canAskAgain } = await Location.getBackgroundPermissionsAsync();
-    let backgroundStatus = currentBgStatus;
-    if (backgroundStatus !== 'granted' && canAskAgain) {
-      try {
-        const res = await Location.requestBackgroundPermissionsAsync();
-        backgroundStatus = res.status;
-      } catch {
-        // ignore
+    let backgroundStatus: string = 'undetermined';
+    try {
+      const bgPerm = await Location.getBackgroundPermissionsAsync();
+      backgroundStatus = bgPerm.status;
+      if (backgroundStatus !== 'granted' && bgPerm.canAskAgain) {
+        try {
+          const res = await Location.requestBackgroundPermissionsAsync();
+          backgroundStatus = res.status;
+        } catch {
+          // ignore
+        }
       }
+    } catch (permError) {
+      console.warn('[Location] Background permission query not available:', permError);
     }
 
     // On Android, foregroundService runs with foreground permission OR background permission.

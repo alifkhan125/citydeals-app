@@ -190,9 +190,9 @@ export const locationService = {
 
     foregroundLocationSubscription = await Location.watchPositionAsync(
       {
-        accuracy: Location.Accuracy.High,
-        distanceInterval: 1,
-        timeInterval: 5000,
+        accuracy: Location.Accuracy.Balanced,
+        distanceInterval: 50,
+        timeInterval: 30000,
       },
       (position) => {
         const coords: LocationCoords = {

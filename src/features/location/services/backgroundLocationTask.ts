@@ -6,8 +6,11 @@ import { Platform } from 'react-native';
 
 export const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
 
-// 5 minutes cooldown between repeated alerts for the very same deal (allows quick re-testing)
-const DEAL_NOTIFICATION_COOLDOWN_MS =  30 * 1000;
+// 24 hours cooldown between repeated alerts for the very same deal
+const DEAL_NOTIFICATION_COOLDOWN_MS = 3 * 60 * 1000;
+
+// Track last checked coordinates to ensure check only runs when user actually changes location (>= 50 meters)
+let lastCheckedLocation: { latitude: number; longitude: number } | null = null;
 
 export async function getNotificationPreferences() {
   try {
@@ -32,17 +35,18 @@ export function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: nu
   const R = 6371; // Radius of the earth in km
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a = 
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
-  return R * c; 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /**
  * Core proximity checker: checks coords against cached deals and fires heads-up notification.
  * Works seamlessly in FOREGROUND (app open), BACKGROUND (minimized), and KILLED state.
+ * Only triggers if location changed by at least 50m and there is a genuinely new coupon.
  */
 export async function processNearbyDealsCheck(
   coords: { latitude: number; longitude: number },
@@ -51,6 +55,20 @@ export async function processNearbyDealsCheck(
   try {
     const preferences = await getNotificationPreferences();
     if (preferences.notificationsPaused) return;
+
+    // Displacement filter: User must move at least 50 meters (0.05 km) before re-checking deals
+    if (!forceNotify && lastCheckedLocation) {
+      const movedKm = getDistanceKm(
+        coords.latitude,
+        coords.longitude,
+        lastCheckedLocation.latitude,
+        lastCheckedLocation.longitude
+      );
+      if (movedKm < 0.05) {
+        return; // User has not moved significantly
+      }
+    }
+    lastCheckedLocation = { latitude: coords.latitude, longitude: coords.longitude };
 
     // 1. Fetch saved deals from local storage
     let savedDeals: any[] = [];
@@ -70,7 +88,7 @@ export async function processNearbyDealsCheck(
         const fetched = await couponsApi.getCoupons();
         if (Array.isArray(fetched) && fetched.length > 0) {
           savedDeals = fetched.slice(0, 100);
-          await AsyncStorage.setItem('nearby_deals_cache', JSON.stringify(savedDeals)).catch(() => {});
+          await AsyncStorage.setItem('nearby_deals_cache', JSON.stringify(savedDeals)).catch(() => { });
         }
       } catch {
         // network or auth error, continue
@@ -85,6 +103,7 @@ export async function processNearbyDealsCheck(
 
     const now = Date.now();
     let newlyNotified = false;
+    let notificationsSentThisPass = 0;
 
     // 2. Loop through deals and check distance
     for (const deal of savedDeals) {
@@ -102,34 +121,37 @@ export async function processNearbyDealsCheck(
 
       const distanceMeters = distanceKm * 1000;
 
-      // 3. If within the user's selected notification radius (e.g. 50m)
+      // 3. If within the user's selected notification radius (e.g. 50m / 2000m)
       if (distanceMeters <= preferences.radiusMeters) {
         const lastNotified = notifiedDeals[deal.id];
 
-        // Notify if not notified recently (cooldown passed or forced)
+        // Notify only if genuinely new (never notified before or cooldown of 24h passed)
         if (forceNotify || !lastNotified || (now - lastNotified) > DEAL_NOTIFICATION_COOLDOWN_MS) {
-          const storeName = deal.merchant?.name || 'Nearby Store';
-          const dealTitle = deal.title || 'Special Offer';
-          const metersFormatted = Math.round(distanceMeters);
+          // Limit to max 1 alert per displacement event to avoid sudden chime spam
+          if (notificationsSentThisPass < 1) {
+            const storeName = deal.merchant?.name || 'Nearby Store';
+            const dealTitle = deal.title || 'Special Offer';
+            const metersFormatted = Math.round(distanceMeters);
 
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: `📍 Nearby Deal Alert (${metersFormatted}m away)`,
-              body: `You are near ${dealTitle} at ${storeName}! Tap to redeem.`,
-              sound: true,
-              priority: Notifications.AndroidNotificationPriority.MAX,
-              // Required for Android 8.0+ heads-up banner display
-              ...(Platform.OS === 'android' ? { channelId: 'deals' } : {}),
-              data: {
-                couponId: deal.id,
-                dealId: deal.id,
-                sourceType: 'NEARBY_DEALS',
-                radiusMeters: preferences.radiusMeters,
-                distanceMeters,
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: `📍 Nearby Deal Alert (${metersFormatted}m away)`,
+                body: `You are near ${dealTitle} at ${storeName}! Tap to redeem.`,
+                sound: true,
+                priority: Notifications.AndroidNotificationPriority.MAX,
+                ...(Platform.OS === 'android' ? { channelId: 'deals' } : {}),
+                data: {
+                  couponId: deal.id,
+                  dealId: deal.id,
+                  sourceType: 'NEARBY_DEALS',
+                  radiusMeters: preferences.radiusMeters,
+                  distanceMeters,
+                },
               },
-            },
-            trigger: null, // trigger immediately
-          });
+              trigger: null, // trigger immediately
+            });
+            notificationsSentThisPass++;
+          }
 
           notifiedDeals[deal.id] = now;
           newlyNotified = true;
@@ -211,16 +233,16 @@ export const startBackgroundLocationTracking = async (forceRestart = false) => {
 
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
     if (isRegistered && forceRestart) {
-      await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => {});
+      await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => { });
     }
 
     if (!isRegistered || forceRestart) {
       await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
-        accuracy: Location.Accuracy.High,
-        distanceInterval: 1, // 1m sensitivity so small movements trigger checks
-        timeInterval: 5000,  // check every 5 seconds on Android
-        deferredUpdatesInterval: 5000,
-        showsBackgroundLocationIndicator: true,
+        accuracy: Location.Accuracy.Balanced,
+        distanceInterval: 50, // 50m sensitivity so stationary jitter never triggers checks
+        timeInterval: 30000,  // check at most every 30 seconds on Android
+        deferredUpdatesInterval: 30000,
+        showsBackgroundLocationIndicator: false,
         foregroundService: {
           notificationTitle: 'CityDeals Nearby Offers',
           notificationBody: 'Watching for close deals near your location',

@@ -39,6 +39,9 @@ export default function DealCardSkeleton({ count = 2 }: DealCardSkeletonProps) {
             shadowOpacity: 0.12,
             shadowRadius: 12,
             elevation: 4,
+            maxWidth: 580,
+            width: "100%",
+            alignSelf: "center",
           }}
           className="bg-white rounded-[26px] p-4 mb-5 border border-slate-200"
         >
@@ -47,7 +50,7 @@ export default function DealCardSkeleton({ count = 2 }: DealCardSkeletonProps) {
             style={[
               {
                 width: "100%",
-                height: 350,
+                height: 260,
                 opacity: pulseAnim,
               },
             ]}

@@ -5,6 +5,7 @@ import { InteractionManager, Platform } from "react-native";
 import { router } from "expo-router";
 import { apiClient } from "../../../api/client";
 import { ENDPOINTS } from "../../../api/endpoints";
+import { toast } from "sonner-native";
 
 // Configure how notifications appear when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -94,29 +95,53 @@ export async function registerForPushNotificationsAsync(): Promise<
   }
 
   try {
-    const tokenData =
-      Platform.OS === "ios"
-        ? await Notifications.getExpoPushTokenAsync(
+    let token: string | null = null;
+
+    if (Platform.OS === "ios") {
+      const tokenData = await Notifications.getExpoPushTokenAsync(
+        getExpoProjectId() ? { projectId: getExpoProjectId() } : undefined
+      );
+      token = String(tokenData.data);
+    } else {
+      // Android: attempt native FCM device token first
+      try {
+        const tokenData = await Notifications.getDevicePushTokenAsync();
+        if (tokenData?.data) {
+          token = String(tokenData.data);
+        }
+      } catch (fcmError: any) {
+        console.warn(
+          "[PUSH] Native FCM token retrieval failed, attempting Expo push token fallback:",
+          fcmError?.message || fcmError
+        );
+      }
+
+      // If native FCM token wasn't retrieved, fall back to Expo push token
+      if (!token) {
+        try {
+          const expoTokenData = await Notifications.getExpoPushTokenAsync(
             getExpoProjectId() ? { projectId: getExpoProjectId() } : undefined
-          )
-        : await Notifications.getDevicePushTokenAsync();
-    const token = String(tokenData.data);
-    console.log("[PUSH] Device push token:", token);
-    cachedPushToken = token;
-    return token;
+          );
+          if (expoTokenData?.data) {
+            token = String(expoTokenData.data);
+          }
+        } catch (expoErr: any) {
+          console.warn("[PUSH] Expo push token fallback also failed:", expoErr?.message || expoErr);
+        }
+      }
+    }
+
+    if (token) {
+      console.log("[PUSH] Resolved push token:", token);
+      cachedPushToken = token;
+      return token;
+    }
+
+    console.warn("[PUSH] No push token could be resolved.");
+    return null;
   } catch (error: any) {
     const errorMessage = error?.message || String(error);
-    if (
-      errorMessage.includes("Firebase") ||
-      errorMessage.includes("googleServicesFile")
-    ) {
-      isPushConfiguredOnDevice = false;
-      console.warn(
-        "[PUSH] Push notifications (FCM/APNs) are not fully configured yet. Push token registration will be skipped for this session."
-      );
-    } else {
-      console.warn("[PUSH] Failed to get push token:", errorMessage);
-    }
+    console.warn("[PUSH] Failed to get push token:", errorMessage);
     return null;
   }
 }
@@ -208,7 +233,15 @@ export function setupNotificationListeners() {
   // When a notification is received while app is in foreground
   const receivedSubscription =
     Notifications.addNotificationReceivedListener((notification) => {
-      console.log("[PUSH] Notification received:", notification.request.content.title);
+      const title = notification.request.content.title;
+      const body = notification.request.content.body;
+      console.log("[PUSH] Notification received in foreground:", title, body);
+
+      if (title || body) {
+        toast.info(title || "New Notification", {
+          description: body || undefined,
+        });
+      }
     });
 
   // When user taps on a notification

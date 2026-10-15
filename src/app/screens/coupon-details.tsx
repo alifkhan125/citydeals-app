@@ -418,6 +418,7 @@ function ensureHttps(url?: string | null): string | null {
           paddingBottom: insets.bottom + 32,
         }}
       >
+        <View style={{ maxWidth: 640, width: "100%", alignSelf: "center" }}>
         {/* Loading Indicator */}
         {loading && (
           <View className="mx-4 mt-3 py-2 flex-row items-center justify-center gap-2 bg-orange-50/80 rounded-xl">
@@ -663,6 +664,7 @@ function ensureHttps(url?: string | null): string | null {
               />
             </TouchableOpacity>
           </View>
+        </View>
         </View>
       </ScrollView>
 

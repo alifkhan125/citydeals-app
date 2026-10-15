@@ -77,7 +77,8 @@ export default function LanguageSelectionScreen() {
           justifyContent: "space-between",
         }}
       >
-        {/* Header Section */}
+        <View style={{ maxWidth: 460, width: "100%", alignSelf: "center", flex: 1, justifyContent: "space-between" }}>
+          {/* Header Section */}
         <View>
           {/* Centered Logo */}
           <View className="items-center mb-8">
@@ -167,6 +168,7 @@ export default function LanguageSelectionScreen() {
             title={t("common.continue")}
             onPress={handleContinue}
           />
+        </View>
         </View>
       </ScrollView>
     </SafeAreaView>

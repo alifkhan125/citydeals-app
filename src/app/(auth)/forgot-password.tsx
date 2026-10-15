@@ -248,7 +248,8 @@ export default function ForgotPasswordScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Centered Logo */}
+          <View style={{ maxWidth: 460, width: "100%", alignSelf: "center" }}>
+            {/* Centered Logo */}
           <View className="items-center mt-1 mb-2">
             <Image
               source={require("../../../assets/images/city-deals-logo.png")}
@@ -518,6 +519,7 @@ export default function ForgotPasswordScreen() {
               </TouchableOpacity>
             </View>
           )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

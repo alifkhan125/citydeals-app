@@ -1,8 +1,13 @@
+import { LogBox } from "react-native";
 import { Stack } from "expo-router";
 import AppProviders from "../providers/AppProviders";
 import "../global.css";
 import "../locales";
 import "../features/location/services/backgroundLocationTask";
+
+LogBox.ignoreLogs([
+  "Can't perform a React state update on a component that hasn't mounted yet",
+]);
 
 export default function RootLayout() {
   return (

@@ -9,7 +9,6 @@ import { ENDPOINTS } from "../../../api/endpoints";
 // Configure how notifications appear when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowBanner: true,
@@ -27,6 +26,27 @@ function getExpoProjectId(): string | undefined {
     (Constants.expoConfig?.extra?.eas as { projectId?: string } | undefined)
       ?.projectId
   );
+}
+
+export async function setupAndroidNotificationChannels() {
+  if (Platform.OS !== "android") return;
+
+  await Notifications.setNotificationChannelAsync("default", {
+    name: "Default",
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: "#ea580c",
+  });
+
+  await Notifications.setNotificationChannelAsync("deals", {
+    name: "Deals & Offers",
+    description: "Notifications about nearby deals and offers",
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: "#ea580c",
+    enableVibrate: true,
+    showBadge: true,
+  });
 }
 
 /**
@@ -68,24 +88,9 @@ export async function registerForPushNotificationsAsync(): Promise<
     return null;
   }
 
-  // Android requires a notification channel
+  // Android requires notification channels
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "Default",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#ea580c",
-    });
-
-    await Notifications.setNotificationChannelAsync("deals", {
-      name: "Deals & Offers",
-      description: "Notifications about nearby deals and offers",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#ea580c",
-      enableVibrate: true,
-      showBadge: true,
-    });
+    await setupAndroidNotificationChannels();
   }
 
   try {
@@ -195,6 +200,10 @@ function handleNotificationResponse(response: Notifications.NotificationResponse
  */
 export function setupNotificationListeners() {
   let isMounted = true;
+
+  if (Platform.OS === "android") {
+    setupAndroidNotificationChannels().catch(() => {});
+  }
 
   // When a notification is received while app is in foreground
   const receivedSubscription =

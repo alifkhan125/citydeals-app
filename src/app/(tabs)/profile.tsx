@@ -124,7 +124,16 @@ export default function ProfileScreen() {
         }
       >
         {/* User Card */}
-        <View className="bg-white rounded-3xl p-5 mx-4 mt-4 border border-neutral-100 shadow-sm">
+        <View
+          style={{
+            shadowColor: "#000000",
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.08,
+            shadowRadius: 10,
+            elevation: 3,
+          }}
+          className="bg-white rounded-3xl p-5 mx-4 mt-4 border border-slate-200"
+        >
           {/* User Info Row */}
           <View className="flex-row items-center mb-5">
             <Image

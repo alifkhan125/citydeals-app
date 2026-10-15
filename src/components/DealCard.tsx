@@ -47,7 +47,16 @@ export default function DealCard({
       : deal.image || require("../../assets/images/placeholder-deal.jpg");
 
   return (
-    <View className="bg-white rounded-[26px] p-4 mb-5 border border-neutral-100">
+    <View
+      style={{
+        shadowColor: "#000000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+        elevation: 4,
+      }}
+      className="bg-white rounded-[26px] p-4 mb-5 border border-slate-200"
+    >
       {/* Banner Container */}
       <View className="rounded-2xl overflow-hidden bg-neutral-100 relative">
         {/* Favorite Heart Button */}
@@ -99,7 +108,7 @@ export default function DealCard({
         <Image
           source={imageSource}
           className="w-full h-[55vh]"
-          style={{ width: "100%", height: 350 }}
+          style={{ width: "100%", height: 250 }}
           contentFit="cover"
         />
       </View>

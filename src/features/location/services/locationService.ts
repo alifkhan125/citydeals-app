@@ -173,7 +173,7 @@ export const locationService = {
         locationService.startForegroundProximityWatch().catch((e) =>
           console.warn("Foreground tracking error:", e)
         );
-        startBackgroundLocationTracking(true).catch((e) => console.warn("Background tracking error:", e));
+        startBackgroundLocationTracking().catch((e) => console.warn("Background tracking error:", e));
       })
       .catch((err) => {
         console.warn("Failed to start background tracking:", err);

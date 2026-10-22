@@ -52,7 +52,7 @@ export interface Coupon {
   discussion?: string | null;
   terms?: string | null;
   shareSlug: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
+  status: 'ACTIVE' | 'ARCHIVED' | 'INACTIVE' | 'EXPIRED' | 'SUSPENDED';
   startsAt?: string | null;
   expiresAt?: string | null;
   areaId?: string;

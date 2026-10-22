@@ -95,7 +95,8 @@ export async function processNearbyDealsCheck(
       }
     }
 
-    if (!Array.isArray(savedDeals) || savedDeals.length === 0) return;
+    savedDeals = savedDeals.filter((deal) => deal?.status === 'ACTIVE');
+    if (savedDeals.length === 0) return;
 
     // Fetch already notified deals
     const notifiedStr = await AsyncStorage.getItem('notified_deals');
@@ -186,7 +187,12 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) =>
 });
 
 // Helper to start background location tracking
-export const startBackgroundLocationTracking = async (forceRestart = false) => {
+let backgroundStartPromise: Promise<void> | null = null;
+
+export const startBackgroundLocationTracking = async () => {
+  if (backgroundStartPromise) return backgroundStartPromise;
+
+  backgroundStartPromise = (async () => {
   try {
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('deals', {
@@ -232,11 +238,7 @@ export const startBackgroundLocationTracking = async (forceRestart = false) => {
     }
 
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
-    if (isRegistered && forceRestart) {
-      await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => { });
-    }
-
-    if (!isRegistered || forceRestart) {
+    if (!isRegistered) {
       await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
         accuracy: Location.Accuracy.Balanced,
         distanceInterval: 50, // 50m sensitivity so stationary jitter never triggers checks
@@ -253,5 +255,12 @@ export const startBackgroundLocationTracking = async (forceRestart = false) => {
     }
   } catch (error) {
     console.error('[Location] Failed to start background tracking:', error);
+  }
+  })();
+
+  try {
+    await backgroundStartPromise;
+  } finally {
+    backgroundStartPromise = null;
   }
 };

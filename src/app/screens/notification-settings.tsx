@@ -98,7 +98,7 @@ export default function NotificationSettingsScreen() {
             const { startBackgroundLocationTracking } = await import(
               "../../features/location/services/backgroundLocationTask"
             );
-            await startBackgroundLocationTracking(true).catch(() => null);
+            await startBackgroundLocationTracking().catch(() => null);
           }
           toast.success("Notification settings updated");
         },

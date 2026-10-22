@@ -15,14 +15,18 @@ export const useCoupons = (filters?: CouponFilterParams) => {
   return useQuery({
     queryKey: [...COUPONS_QUERY_KEY, filters],
     queryFn: async () => {
-      const data = await couponsApi.getCoupons(filters);
+      const data = (await couponsApi.getCoupons(filters)).filter(
+        (coupon) => coupon.status === "ACTIVE",
+      );
       // Cache data for background location task
       if (data && Array.isArray(data)) {
         AsyncStorage.setItem('nearby_deals_cache', JSON.stringify(data.slice(0, 100))).catch(e => console.warn(e));
       }
       return data;
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes cache
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: true,
   });
 };
 

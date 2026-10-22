@@ -9,7 +9,7 @@ export const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
 // 24 hours cooldown between repeated alerts for the very same deal
 const DEAL_NOTIFICATION_COOLDOWN_MS = 3 * 60 * 1000;
 
-// Track last checked coordinates to ensure check only runs when user actually changes location (>= 50 meters)
+// Track last checked coordinates so the check follows the user's selected radius.
 let lastCheckedLocation: { latitude: number; longitude: number } | null = null;
 
 export async function getNotificationPreferences() {
@@ -56,7 +56,8 @@ export async function processNearbyDealsCheck(
     const preferences = await getNotificationPreferences();
     if (preferences.notificationsPaused) return;
 
-    // Displacement filter: User must move at least 50 meters (0.05 km) before re-checking deals
+    // Use the selected radius as the movement threshold. A fixed 50m threshold
+    // would make small test/custom radii (1m, 10m, 55m) appear broken.
     if (!forceNotify && lastCheckedLocation) {
       const movedKm = getDistanceKm(
         coords.latitude,
@@ -64,7 +65,8 @@ export async function processNearbyDealsCheck(
         lastCheckedLocation.latitude,
         lastCheckedLocation.longitude
       );
-      if (movedKm < 0.05) {
+      const movementThresholdMeters = Math.max(1, Math.min(50, preferences.radiusMeters / 2));
+      if (movedKm * 1000 < movementThresholdMeters) {
         return; // User has not moved significantly
       }
     }
@@ -239,9 +241,12 @@ export const startBackgroundLocationTracking = async () => {
 
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
     if (!isRegistered) {
+      const preferences = await getNotificationPreferences();
+      const movementInterval = Math.max(1, Math.min(50, Math.floor(preferences.radiusMeters / 2)));
+
       await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
         accuracy: Location.Accuracy.Balanced,
-        distanceInterval: 50, // 50m sensitivity so stationary jitter never triggers checks
+        distanceInterval: movementInterval,
         timeInterval: 30000,  // check at most every 30 seconds on Android
         deferredUpdatesInterval: 30000,
         showsBackgroundLocationIndicator: false,
@@ -263,4 +268,17 @@ export const startBackgroundLocationTracking = async () => {
   } finally {
     backgroundStartPromise = null;
   }
+};
+
+export const restartBackgroundLocationTracking = async () => {
+  try {
+    const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
+    if (isRegistered) {
+      await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+    }
+  } catch (error) {
+    console.warn('[Location] Failed to reset background tracking:', error);
+  }
+
+  await startBackgroundLocationTracking();
 };

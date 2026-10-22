@@ -95,10 +95,12 @@ export default function NotificationSettingsScreen() {
           await AsyncStorage.removeItem("notified_deals").catch(() => null);
           if (!notificationsPaused) {
             await syncPushTokenWithBackend().catch(() => null);
-            const { startBackgroundLocationTracking } = await import(
+            const { restartBackgroundLocationTracking, startBackgroundLocationTracking } = await import(
               "../../features/location/services/backgroundLocationTask"
             );
-            await startBackgroundLocationTracking().catch(() => null);
+            await restartBackgroundLocationTracking().catch(() =>
+              startBackgroundLocationTracking().catch(() => null)
+            );
           }
           toast.success("Notification settings updated");
         },

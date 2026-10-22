@@ -191,8 +191,10 @@ export const locationService = {
     foregroundLocationSubscription = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.Balanced,
-        distanceInterval: 50,
-        timeInterval: 30000,
+        // Keep the watcher sensitive enough for very small custom radii. The
+        // checker itself applies the selected radius and movement threshold.
+        distanceInterval: 1,
+        timeInterval: 10000,
       },
       (position) => {
         const coords: LocationCoords = {

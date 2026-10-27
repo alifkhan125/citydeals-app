@@ -1,15 +1,15 @@
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
+import { InteractionManager, Platform } from "react-native";
 import { router } from "expo-router";
 import { apiClient } from "../../../api/client";
 import { ENDPOINTS } from "../../../api/endpoints";
+import { toast } from "sonner-native";
 
 // Configure how notifications appear when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowBanner: true,
@@ -27,6 +27,27 @@ function getExpoProjectId(): string | undefined {
     (Constants.expoConfig?.extra?.eas as { projectId?: string } | undefined)
       ?.projectId
   );
+}
+
+export async function setupAndroidNotificationChannels() {
+  if (Platform.OS !== "android") return;
+
+  await Notifications.setNotificationChannelAsync("default", {
+    name: "Default",
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: "#ea580c",
+  });
+
+  await Notifications.setNotificationChannelAsync("deals", {
+    name: "Deals & Offers",
+    description: "Notifications about nearby deals and offers",
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: "#ea580c",
+    enableVibrate: true,
+    showBadge: true,
+  });
 }
 
 /**
@@ -68,48 +89,59 @@ export async function registerForPushNotificationsAsync(): Promise<
     return null;
   }
 
-  // Android requires a notification channel
+  // Android requires notification channels
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "Default",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#ea580c",
-    });
-
-    await Notifications.setNotificationChannelAsync("deals", {
-      name: "Deals & Offers",
-      description: "Notifications about nearby deals and offers",
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#ea580c",
-    });
+    await setupAndroidNotificationChannels();
   }
 
   try {
-    const tokenData =
-      Platform.OS === "ios"
-        ? await Notifications.getExpoPushTokenAsync(
+    let token: string | null = null;
+
+    if (Platform.OS === "ios") {
+      const tokenData = await Notifications.getExpoPushTokenAsync(
+        getExpoProjectId() ? { projectId: getExpoProjectId() } : undefined
+      );
+      token = String(tokenData.data);
+    } else {
+      // Android: attempt native FCM device token first
+      try {
+        const tokenData = await Notifications.getDevicePushTokenAsync();
+        if (tokenData?.data) {
+          token = String(tokenData.data);
+        }
+      } catch (fcmError: any) {
+        console.warn(
+          "[PUSH] Native FCM token retrieval failed, attempting Expo push token fallback:",
+          fcmError?.message || fcmError
+        );
+      }
+
+      // If native FCM token wasn't retrieved, fall back to Expo push token
+      if (!token) {
+        try {
+          const expoTokenData = await Notifications.getExpoPushTokenAsync(
             getExpoProjectId() ? { projectId: getExpoProjectId() } : undefined
-          )
-        : await Notifications.getDevicePushTokenAsync();
-    const token = String(tokenData.data);
-    console.log("[PUSH] Device push token:", token);
-    cachedPushToken = token;
-    return token;
+          );
+          if (expoTokenData?.data) {
+            token = String(expoTokenData.data);
+          }
+        } catch (expoErr: any) {
+          console.warn("[PUSH] Expo push token fallback also failed:", expoErr?.message || expoErr);
+        }
+      }
+    }
+
+    if (token) {
+      console.log("[PUSH] Resolved push token:", token);
+      cachedPushToken = token;
+      return token;
+    }
+
+    console.warn("[PUSH] No push token could be resolved.");
+    return null;
   } catch (error: any) {
     const errorMessage = error?.message || String(error);
-    if (
-      errorMessage.includes("Firebase") ||
-      errorMessage.includes("googleServicesFile")
-    ) {
-      isPushConfiguredOnDevice = false;
-      console.warn(
-        "[PUSH] Push notifications (FCM/APNs) are not fully configured yet. Push token registration will be skipped for this session."
-      );
-    } else {
-      console.warn("[PUSH] Failed to get push token:", errorMessage);
-    }
+    console.warn("[PUSH] Failed to get push token:", errorMessage);
     return null;
   }
 }
@@ -183,17 +215,33 @@ function handleNotificationResponse(response: Notifications.NotificationResponse
   lastHandledNotificationKey = key;
 
   console.log("[PUSH] Notification tapped, data:", data);
-  navigateToNotificationSource(data);
+  InteractionManager.runAfterInteractions(() => {
+    setTimeout(() => navigateToNotificationSource(data), 150);
+  });
 }
 
 /**
  * Listen for incoming notifications (foreground) and taps (background / killed)
  */
 export function setupNotificationListeners() {
+  let isMounted = true;
+
+  if (Platform.OS === "android") {
+    setupAndroidNotificationChannels().catch(() => {});
+  }
+
   // When a notification is received while app is in foreground
   const receivedSubscription =
     Notifications.addNotificationReceivedListener((notification) => {
-      console.log("[PUSH] Notification received:", notification.request.content.title);
+      const title = notification.request.content.title;
+      const body = notification.request.content.body;
+      console.log("[PUSH] Notification received in foreground:", title, body);
+
+      if (title || body) {
+        toast.info(title || "New Notification", {
+          description: body || undefined,
+        });
+      }
     });
 
   // When user taps on a notification
@@ -201,12 +249,15 @@ export function setupNotificationListeners() {
     Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
 
   Notifications.getLastNotificationResponseAsync().then((response) => {
-    if (response) {
-      setTimeout(() => handleNotificationResponse(response), 250);
+    if (response && isMounted) {
+      setTimeout(() => {
+        if (isMounted) handleNotificationResponse(response);
+      }, 1000);
     }
   });
 
   return () => {
+    isMounted = false;
     receivedSubscription.remove();
     responseSubscription.remove();
   };

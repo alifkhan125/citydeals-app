@@ -33,14 +33,24 @@ export default function DealCardSkeleton({ count = 2 }: DealCardSkeletonProps) {
       {Array.from({ length: count }).map((_, index) => (
         <View
           key={index}
-          className="bg-white rounded-[26px] p-4 mb-5 border border-neutral-100"
+          style={{
+            shadowColor: "#000000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.12,
+            shadowRadius: 12,
+            elevation: 4,
+            maxWidth: 580,
+            width: "100%",
+            alignSelf: "center",
+          }}
+          className="bg-white rounded-[26px] p-4 mb-5 border border-slate-200"
         >
           {/* Poster Image Skeleton */}
           <Animated.View
             style={[
               {
                 width: "100%",
-                height: 350,
+                height: 260,
                 opacity: pulseAnim,
               },
             ]}

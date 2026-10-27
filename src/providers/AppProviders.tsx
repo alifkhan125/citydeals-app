@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { AppState } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner-native";
@@ -8,6 +9,7 @@ import i18n from "../locales";
 import { useUserLocation } from "../features/location/hooks/useUserLocation";
 import { tokenService } from "../features/auth/services/tokenService";
 import { useAuthStore } from "../features/auth/store/useAuthStore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const queryClient = new QueryClient();
 
@@ -53,17 +55,35 @@ function NotificationInitializer() {
   return null;
 }
 
+function AppStateInitializer() {
+  useEffect(() => {
+    const persistState = (state: string) => {
+      AsyncStorage.setItem("citydeals-app-state", state).catch(() => {});
+    };
+
+    persistState(AppState.currentState);
+    const subscription = AppState.addEventListener("change", persistState);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  return null;
+}
+
 interface AppProvidersProps {
   children: React.ReactNode;
 }
 
 export default function AppProviders({ children }: AppProvidersProps) {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#ffffff" }}>
       <SafeAreaProvider>
         <I18nextProvider i18n={i18n}>
           <QueryClientProvider client={queryClient}>
             <AuthInitializer />
+            <AppStateInitializer />
             <LocationInitializer />
             <NotificationInitializer />
             {children}

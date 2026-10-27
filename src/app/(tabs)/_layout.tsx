@@ -27,71 +27,80 @@ function CustomBottomTabBar({
         left: 0,
         right: 0,
         bottom: 0,
-        height: barHeight,
-        paddingBottom: safeBottom,
-        backgroundColor: "#ffffff",
-        borderTopLeftRadius: 28,
-        borderTopRightRadius: 28,
-        borderTopWidth: 1,
-        borderTopColor: "#f1f5f9",
-        flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-around",
-        elevation: 14,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
       }}
+      pointerEvents="box-none"
     >
-      {state.routes.map((route: any, index: number) => {
-        const isFocused = state.index === index;
-        const { options } = descriptors[route.key];
-        const label = options.title || route.name;
+      <View
+        style={{
+          width: "100%",
+          maxWidth: 640,
+          height: barHeight,
+          paddingBottom: safeBottom,
+          backgroundColor: "#ffffff",
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          borderTopWidth: 1,
+          borderTopColor: "#f1f5f9",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-around",
+          elevation: 14,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 10,
+        }}
+      >
+        {state.routes.map((route: any, index: number) => {
+          const isFocused = state.index === index;
+          const { options } = descriptors[route.key];
+          const label = options.title || route.name;
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
 
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
 
-        return (
-          <TouchableOpacity
-            key={route.key}
-            activeOpacity={0.7}
-            onPress={onPress}
-            style={{
-              flex: 1,
-              height: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {options.tabBarIcon?.({
-              focused: isFocused,
-              color: isFocused ? "#ea580c" : "#94a3b8",
-              size: 24,
-            })}
-            <Text
+          return (
+            <TouchableOpacity
+              key={route.key}
+              activeOpacity={0.7}
+              onPress={onPress}
               style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: isFocused ? "#ea580c" : "#94a3b8",
-                marginTop: 4,
-                textAlign: "center",
+                flex: 1,
+                height: "100%",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+              {options.tabBarIcon?.({
+                focused: isFocused,
+                color: isFocused ? "#ea580c" : "#94a3b8",
+                size: 24,
+              })}
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: isFocused ? "#ea580c" : "#94a3b8",
+                  marginTop: 4,
+                  textAlign: "center",
+                }}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }

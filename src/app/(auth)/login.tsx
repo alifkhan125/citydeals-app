@@ -117,7 +117,7 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Top Bar with Language Selector */}
-          <View className="flex-row justify-end items-center mb-1">
+          <View style={{ maxWidth: 460, width: "100%", alignSelf: "center" }} className="flex-row justify-end items-center mb-1">
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => setIsLanguageSheetOpen(true)}
@@ -131,7 +131,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <View className="flex-1 justify-center my-auto">
+          <View style={{ maxWidth: 460, width: "100%", alignSelf: "center" }} className="flex-1 justify-center my-auto">
             {/* Centered Logo */}
           <View className="items-center mt-1 mb-2">
             <Image

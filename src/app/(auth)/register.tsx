@@ -95,8 +95,9 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Top Bar with Language Selector */}
-          <View className="flex-row justify-end items-center mb-1">
+          <View style={{ maxWidth: 460, width: "100%", alignSelf: "center" }}>
+            {/* Top Bar with Language Selector */}
+            <View className="flex-row justify-end items-center mb-1">
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => setIsLanguageSheetOpen(true)}
@@ -323,6 +324,7 @@ export default function RegisterScreen() {
                 {t("auth.continue_as_guest", "Continue as Guest")}
               </Text>
             </TouchableOpacity>
+          </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

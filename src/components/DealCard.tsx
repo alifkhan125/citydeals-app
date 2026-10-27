@@ -35,21 +35,10 @@ export default function DealCard({
   onToggleFavorite,
 }: DealCardProps) {
   const { t } = useTranslation();
-  const [favorite, setFavorite] = useState(deal.isFavorite ?? false);
-
-  useEffect(() => {
-    setFavorite(deal.isFavorite ?? false);
-  }, [deal.isFavorite]);
+  const isFavorite = Boolean(deal.isFavorite);
 
   const handleFavoriteToggle = () => {
-    const isAuth = useAuthStore.getState().isAuthenticated;
-    if (!isAuth) {
-      onToggleFavorite?.(deal, favorite);
-      return;
-    }
-    const currentFav = favorite;
-    setFavorite(!currentFav);
-    onToggleFavorite?.(deal, currentFav);
+    onToggleFavorite?.(deal, isFavorite);
   };
 
   const imageSource =
@@ -58,7 +47,19 @@ export default function DealCard({
       : deal.image || require("../../assets/images/placeholder-deal.jpg");
 
   return (
-    <View className="bg-white rounded-[26px] p-4 mb-5 border border-neutral-100">
+    <View
+      style={{
+        shadowColor: "#000000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+        elevation: 4,
+        maxWidth: 580,
+        width: "100%",
+        alignSelf: "center",
+      }}
+      className="bg-white rounded-[26px] p-4 mb-5 border border-slate-200"
+    >
       {/* Banner Container */}
       <View className="rounded-2xl overflow-hidden bg-neutral-100 relative">
         {/* Favorite Heart Button */}
@@ -68,9 +69,9 @@ export default function DealCard({
           className="absolute top-3 right-3 w-10 h-10 rounded-2xl bg-white items-center justify-center z-20 border border-neutral-100"
         >
           <Ionicons
-            name={favorite ? "heart" : "heart-outline"}
+            name={isFavorite ? "heart" : "heart-outline"}
             size={20}
-            color={favorite ? "#ef4444" : "#1e293b"}
+            color={isFavorite ? "#ef4444" : "#1e293b"}
           />
         </TouchableOpacity>
 
@@ -109,8 +110,8 @@ export default function DealCard({
         {/* Poster Image */}
         <Image
           source={imageSource}
-          className="w-full h-[55vh]"
-          style={{ width: "100%", height: 350 }}
+          className="w-full"
+          style={{ width: "100%", height: 260 }}
           contentFit="cover"
         />
       </View>

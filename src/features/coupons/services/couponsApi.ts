@@ -42,7 +42,8 @@ export const couponsApi = {
 
   getSavedCoupons: async (): Promise<Coupon[]> => {
     const { data } = await apiClient.get<any>(ENDPOINTS.COUPONS.SAVED);
-    return data?.data || data || [];
+    const coupons = data?.data || data || [];
+    return Array.isArray(coupons) ? coupons.filter((coupon) => coupon.status === "ACTIVE") : [];
   },
 
   getRedeemedCoupons: async (): Promise<Coupon[]> => {

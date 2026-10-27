@@ -37,6 +37,9 @@ export default function CouponDetailsScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
+  const currentUser = useAuthStore((state) => state.user);
+  const isBlockedUser = currentUser?.status === "BANNED" || currentUser?.status === "SUSPENDED";
+  const blockedMessage = currentUser?.status === "BANNED" ? "This user is banned" : "This user is suspended";
 
   const params = useLocalSearchParams<{
     id: string;
@@ -146,6 +149,10 @@ export default function CouponDetailsScreen() {
 
   // Redeem button handler
   const handleRedeemPress = () => {
+    if (isBlockedUser) {
+      toast.error(blockedMessage);
+      return;
+    }
     if (!isLoggedIn) {
       setIsAuthPromptVisible(true);
       return;
@@ -200,10 +207,19 @@ export default function CouponDetailsScreen() {
       if (isSaved) {
         await couponsApi.unsaveCoupon(dealId);
         setIsSaved(false);
+        queryClient.setQueryData<Coupon[]>(SAVED_COUPONS_QUERY_KEY, (old = []) =>
+          old.filter((c) => c.id !== dealId)
+        );
         showToast("Coupon removed from saved.");
       } else {
         await couponsApi.saveCoupon(dealId);
         setIsSaved(true);
+        if (coupon) {
+          queryClient.setQueryData<Coupon[]>(SAVED_COUPONS_QUERY_KEY, (old = []) => [
+            { ...coupon, isSaved: true },
+            ...old.filter((c) => c.id !== dealId),
+          ]);
+        }
         showToast("Coupon saved successfully!");
       }
       queryClient.invalidateQueries({ queryKey: SAVED_COUPONS_QUERY_KEY });
@@ -409,6 +425,7 @@ function ensureHttps(url?: string | null): string | null {
           paddingBottom: insets.bottom + 32,
         }}
       >
+        <View style={{ maxWidth: 640, width: "100%", alignSelf: "center" }}>
         {/* Loading Indicator */}
         {loading && (
           <View className="mx-4 mt-3 py-2 flex-row items-center justify-center gap-2 bg-orange-50/80 rounded-xl">
@@ -489,9 +506,9 @@ function ensureHttps(url?: string | null): string | null {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleRedeemPress}
-            disabled={isRedeeming}
+            disabled={isRedeeming || isBlockedUser}
             style={{
-              backgroundColor: isRedeemed ? "#059669" : "#ea580c",
+              backgroundColor: isBlockedUser ? "#94a3b8" : isRedeemed ? "#059669" : "#ea580c",
             }}
             className="w-full flex-row items-center justify-center gap-2.5 rounded-2xl py-4 mb-3"
           >
@@ -508,7 +525,7 @@ function ensureHttps(url?: string | null): string | null {
                   style={{ color: "#ffffff" }}
                   className="text-white text-base font-bold tracking-wide"
                 >
-                  {isRedeemed ? t("coupon_details.already_redeemed", "Coupon Already Redeemed") : t("coupon_details.redeem_coupon", "Redeem Coupon")}
+                  {isBlockedUser ? blockedMessage : isRedeemed ? t("coupon_details.already_redeemed", "Coupon Already Redeemed") : t("coupon_details.redeem_coupon", "Redeem Coupon")}
                 </Text>
               </>
             )}
@@ -654,6 +671,7 @@ function ensureHttps(url?: string | null): string | null {
               />
             </TouchableOpacity>
           </View>
+        </View>
         </View>
       </ScrollView>
 

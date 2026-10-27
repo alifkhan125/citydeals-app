@@ -57,7 +57,9 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
       onSettled: () => {
-        router.replace("/(auth)/login" as any);
+        setTimeout(() => {
+          router.replace("/(auth)/login" as any);
+        }, 50);
       },
     });
   };
@@ -122,7 +124,16 @@ export default function ProfileScreen() {
         }
       >
         {/* User Card */}
-        <View className="bg-white rounded-3xl p-5 mx-4 mt-4 border border-neutral-100 shadow-sm">
+        <View
+          style={{
+            shadowColor: "#000000",
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.08,
+            shadowRadius: 10,
+            elevation: 3,
+          }}
+          className="bg-white rounded-3xl p-5 mx-4 mt-4 border border-slate-200"
+        >
           {/* User Info Row */}
           <View className="flex-row items-center mb-5">
             <Image
@@ -167,7 +178,7 @@ export default function ProfileScreen() {
                   router.push("/(tabs)/saved" as any);
                 }
               }}
-              className="flex-1 bg-neutral-50/80 border border-neutral-100/90 rounded-2xl p-4 mr-2 active:bg-neutral-100"
+              className="flex-1 bg-neutral-50 border border-neutral-100 rounded-2xl p-4 mr-2"
             >
               <View className="flex-row items-center justify-between">
                 <Text className="text-2xl font-black text-[#0f3455]">
@@ -199,7 +210,7 @@ export default function ProfileScreen() {
                   setIsRedeemedModalOpen(true);
                 }
               }}
-              className="flex-1 bg-neutral-50/80 border border-neutral-100/90 rounded-2xl p-4 ml-2 active:bg-neutral-100"
+              className="flex-1 bg-neutral-50 border border-neutral-100 rounded-2xl p-4 ml-2"
             >
               <View className="flex-row items-center justify-between">
                 <Text className="text-2xl font-black text-[#0f3455]">
@@ -358,7 +369,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleLogout}
-            className="bg-red-50 border border-red-100/80 rounded-2xl py-4 flex-row items-center justify-center mx-4 mt-5 active:bg-red-100"
+            className="bg-red-50 border border-red-100 rounded-2xl py-4 flex-row items-center justify-center mx-4 mt-5"
           >
             <Feather name="log-out" size={20} color="#ef4444" />
             <Text className="text-red-500 font-bold text-base ml-2">
@@ -369,7 +380,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleGoToAuth}
-            className="bg-orange-500 rounded-2xl py-4 flex-row items-center justify-center mx-4 mt-5 shadow-sm"
+            className="bg-orange-500 rounded-2xl py-4 flex-row items-center justify-center mx-4 mt-5"
           >
             <Feather name="log-in" size={20} color="#ffffff" />
             <Text className="text-white font-bold text-base ml-2">

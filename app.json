@@ -78,7 +78,8 @@
           "color": "#ffffff"
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "./plugins/with-http-api"
     ],
     "experiments": {
       "typedRoutes": true

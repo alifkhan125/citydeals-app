@@ -29,6 +29,7 @@ export default function RootLayout() {
         <Stack.Screen name="screens/help-support" />
         <Stack.Screen name="screens/terms-of-use" />
         <Stack.Screen name="deals/[id]" />
+        <Stack.Screen name="c/[slug]" />
       </Stack>
     </AppProviders>
   );

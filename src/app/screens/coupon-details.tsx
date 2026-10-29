@@ -43,6 +43,7 @@ export default function CouponDetailsScreen() {
 
   const params = useLocalSearchParams<{
     id: string;
+    shareSlug?: string;
     dealHeading?: string;
     dealDescription?: string;
     category?: string;
@@ -50,9 +51,11 @@ export default function CouponDetailsScreen() {
   }>();
 
   const dealId = params.id || "";
+  const sharedSlug = params.shareSlug || "";
 
   // Live Coupon State
   const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const activeCouponId = coupon?.id || dealId;
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -69,13 +72,15 @@ export default function CouponDetailsScreen() {
     let isMounted = true;
 
     async function loadCouponDetails() {
-      if (!dealId) {
+      if (!dealId && !sharedSlug) {
         setLoading(false);
         return;
       }
       try {
         setLoading(true);
-        const data = await couponsApi.getCouponById(dealId);
+        const data = sharedSlug
+          ? await couponsApi.getCouponBySlug(sharedSlug)
+          : await couponsApi.getCouponById(dealId);
         if (isMounted && data) {
           setCoupon(data);
           setIsSaved(!!data.isSaved);
@@ -94,27 +99,27 @@ export default function CouponDetailsScreen() {
     return () => {
       isMounted = false;
     };
-  }, [dealId]);
+  }, [dealId, sharedSlug]);
 
   useEffect(() => {
-    if (!dealId) return;
-    couponsApi.trackCouponView(dealId).catch((err) => {
+    if (!activeCouponId) return;
+    couponsApi.trackCouponView(activeCouponId).catch((err) => {
       console.warn("Could not track coupon view:", err);
     });
-  }, [dealId]);
+  }, [activeCouponId]);
 
   // Derived Display Values
   const dealHeading = coupon?.title || params.dealHeading || "Exclusive Coupon Deal";
   const dealDescription = coupon?.description || params.dealDescription || "Show this coupon to get instant savings at checkout.";
   const merchantName = coupon?.merchant?.name || "Partner Merchant";
   const merchantAddress = coupon?.merchant?.address || (coupon?.area ? `${coupon.area.name}, ${coupon.area.city || ""}` : "Store location in-app");
-  const couponCode = coupon?.couponCode || `CITY-${dealId ? dealId.slice(0, 8).toUpperCase() : "SAVE"}`;
-  const dealUrl = coupon?.couponLink || `https://citydeals.ai/deals/${coupon?.shareSlug || dealId}`;
+  const couponCode = coupon?.couponCode || `CITY-${activeCouponId ? activeCouponId.slice(0, 8).toUpperCase() : "SAVE"}`;
+  const dealUrl = `https://citydeals.ai/c/${coupon?.shareSlug || sharedSlug || dealId}`;
 
   // Dynamic QR Code payload for live camera scanners
   const qrPayload = useMemo(() => {
-    return `https://citydeals.ai/verify?code=${encodeURIComponent(couponCode)}&id=${encodeURIComponent(dealId)}`;
-  }, [couponCode, dealId]);
+    return `https://citydeals.ai/verify?code=${encodeURIComponent(couponCode)}&id=${encodeURIComponent(activeCouponId)}`;
+  }, [couponCode, activeCouponId]);
 
   // Image Source Resolution with bulletproof fallback
   const resolvedImageUrl = useMemo(() => {
@@ -171,7 +176,7 @@ export default function CouponDetailsScreen() {
   const executeRedeemCoupon = async () => {
     try {
       setIsRedeeming(true);
-      await couponsApi.redeemCoupon(dealId);
+      await couponsApi.redeemCoupon(activeCouponId);
       setIsRedeemed(true);
       setIsRedeemModalVisible(true);
       queryClient.invalidateQueries({ queryKey: REDEEMED_COUPONS_QUERY_KEY });
@@ -205,19 +210,19 @@ export default function CouponDetailsScreen() {
     try {
       setIsSaving(true);
       if (isSaved) {
-        await couponsApi.unsaveCoupon(dealId);
+        await couponsApi.unsaveCoupon(activeCouponId);
         setIsSaved(false);
         queryClient.setQueryData<Coupon[]>(SAVED_COUPONS_QUERY_KEY, (old = []) =>
-          old.filter((c) => c.id !== dealId)
+          old.filter((c) => c.id !== activeCouponId)
         );
         showToast("Coupon removed from saved.");
       } else {
-        await couponsApi.saveCoupon(dealId);
+        await couponsApi.saveCoupon(activeCouponId);
         setIsSaved(true);
         if (coupon) {
           queryClient.setQueryData<Coupon[]>(SAVED_COUPONS_QUERY_KEY, (old = []) => [
             { ...coupon, isSaved: true },
-            ...old.filter((c) => c.id !== dealId),
+            ...old.filter((c) => c.id !== activeCouponId),
           ]);
         }
         showToast("Coupon saved successfully!");

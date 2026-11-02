@@ -66,6 +66,8 @@ export interface Coupon {
   category?: CouponCategory | null;
   isSaved?: boolean;
   isRedeemed?: boolean;
+  redeemedAt?: string | null;
+  redemptionAvailableAt?: string | null;
   _count?: {
     redemptions: number;
     savedBy: number;

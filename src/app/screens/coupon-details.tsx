@@ -60,6 +60,8 @@ export default function CouponDetailsScreen() {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isRedeemed, setIsRedeemed] = useState(false);
+  const [redemptionAvailableAt, setRedemptionAvailableAt] = useState<string | null>(null);
+  const [redemptionSecondsLeft, setRedemptionSecondsLeft] = useState(0);
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -85,6 +87,7 @@ export default function CouponDetailsScreen() {
           setCoupon(data);
           setIsSaved(!!data.isSaved);
           setIsRedeemed(!!data.isRedeemed);
+          setRedemptionAvailableAt(data.redemptionAvailableAt || null);
           setImageError(false);
         }
       } catch (err) {
@@ -100,6 +103,22 @@ export default function CouponDetailsScreen() {
       isMounted = false;
     };
   }, [dealId, sharedSlug]);
+
+  useEffect(() => {
+    if (!redemptionAvailableAt) {
+      setRedemptionSecondsLeft(0);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const seconds = Math.max(0, Math.ceil((new Date(redemptionAvailableAt).getTime() - Date.now()) / 1000));
+      setRedemptionSecondsLeft(seconds);
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, [redemptionAvailableAt]);
 
   useEffect(() => {
     if (!activeCouponId) return;
@@ -152,6 +171,19 @@ export default function CouponDetailsScreen() {
     toast.success(msg);
   };
 
+  const isRedemptionCooldownActive = isRedeemed && redemptionSecondsLeft > 0;
+  const canRedeemAgain = isRedeemed && Boolean(redemptionAvailableAt) && redemptionSecondsLeft === 0;
+  const isPermanentlyRedeemed = isRedeemed && !redemptionAvailableAt;
+  const formatCountdown = (totalSeconds: number) => {
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    return `${minutes}m ${seconds}s`;
+  };
+
   // Redeem button handler
   const handleRedeemPress = () => {
     if (isBlockedUser) {
@@ -163,9 +195,14 @@ export default function CouponDetailsScreen() {
       return;
     }
 
-    // If already redeemed, just open code modal
-    if (isRedeemed) {
-      setIsRedeemModalVisible(true);
+    // A redeemed coupon must not reopen the QR/code modal. It becomes
+    // actionable again only after the backend-provided cooldown expires.
+    if (isRedeemed && !canRedeemAgain) {
+      toast.error(
+        isRedemptionCooldownActive
+          ? `This coupon is locked for ${formatCountdown(redemptionSecondsLeft)}.`
+          : "This coupon has already been redeemed.",
+      );
       return;
     }
 
@@ -176,8 +213,9 @@ export default function CouponDetailsScreen() {
   const executeRedeemCoupon = async () => {
     try {
       setIsRedeeming(true);
-      await couponsApi.redeemCoupon(activeCouponId);
+      const result = await couponsApi.redeemCoupon(activeCouponId);
       setIsRedeemed(true);
+      setRedemptionAvailableAt(result?.redemptionAvailableAt || null);
       setIsRedeemModalVisible(true);
       queryClient.invalidateQueries({ queryKey: REDEEMED_COUPONS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
@@ -511,9 +549,9 @@ function ensureHttps(url?: string | null): string | null {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleRedeemPress}
-            disabled={isRedeeming || isBlockedUser}
+            disabled={isRedeeming || isBlockedUser || (isRedeemed && !canRedeemAgain)}
             style={{
-              backgroundColor: isBlockedUser ? "#94a3b8" : isRedeemed ? "#059669" : "#ea580c",
+              backgroundColor: isBlockedUser ? "#94a3b8" : (isRedemptionCooldownActive || isPermanentlyRedeemed) ? "#059669" : "#ea580c",
             }}
             className="w-full flex-row items-center justify-center gap-2.5 rounded-2xl py-4 mb-3"
           >
@@ -522,7 +560,7 @@ function ensureHttps(url?: string | null): string | null {
             ) : (
               <>
                 <Ionicons
-                  name={isRedeemed ? "checkmark-circle" : "ticket"}
+                  name={(isRedemptionCooldownActive || isPermanentlyRedeemed) ? "checkmark-circle" : "ticket"}
                   size={22}
                   color="#ffffff"
                 />
@@ -530,11 +568,28 @@ function ensureHttps(url?: string | null): string | null {
                   style={{ color: "#ffffff" }}
                   className="text-white text-base font-bold tracking-wide"
                 >
-                  {isBlockedUser ? blockedMessage : isRedeemed ? t("coupon_details.already_redeemed", "Coupon Already Redeemed") : t("coupon_details.redeem_coupon", "Redeem Coupon")}
+                  {isBlockedUser
+                    ? blockedMessage
+                    : isRedemptionCooldownActive
+                      ? "Already Redeemed"
+                      : canRedeemAgain
+                        ? "Redeem Again"
+                        : isPermanentlyRedeemed
+                          ? "Already Redeemed"
+                        : t("coupon_details.redeem_coupon", "Redeem Coupon")}
                 </Text>
               </>
             )}
           </TouchableOpacity>
+
+          {isRedemptionCooldownActive && (
+            <View className="mb-4 flex-row items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <Ionicons name="time-outline" size={18} color="#047857" />
+              <Text className="ml-2 text-sm font-semibold text-emerald-700">
+                You can redeem this coupon again in {formatCountdown(redemptionSecondsLeft)}
+              </Text>
+            </View>
+          )}
 
           {/* Secondary Action: Save coupon */}
           <TouchableOpacity

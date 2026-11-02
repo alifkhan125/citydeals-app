@@ -12,6 +12,9 @@
       "buildNumber": "1",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
         "UIBackgroundModes": [
           "location",
           "remote-notification"

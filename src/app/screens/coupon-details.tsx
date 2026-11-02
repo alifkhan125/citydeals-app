@@ -186,7 +186,7 @@ export default function CouponDetailsScreen() {
       const msg = err.response?.data?.message || err.message || "Failed to redeem coupon";
       const errorText = Array.isArray(msg) ? msg[0] : msg;
 
-      if (err.response?.status === 409 || errorText.toLowerCase().includes("already redeemed")) {
+      if (errorText.toLowerCase().includes("already redeemed")) {
         setIsRedeemed(true);
         setIsRedeemModalVisible(true);
         queryClient.invalidateQueries({ queryKey: REDEEMED_COUPONS_QUERY_KEY });

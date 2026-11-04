@@ -169,6 +169,12 @@ function isTruthy(value: unknown): boolean {
 export function navigateToNotificationSource(
   data?: Record<string, unknown> | null
 ) {
+  const sourceType = asString(data?.sourceType);
+  const birthdayGiftId = asString(data?.giftId);
+  if (birthdayGiftId || sourceType === "BIRTHDAY_GIFT" || sourceType === "BIRTHDAY") {
+    router.push({ pathname: "/screens/birthday-gift" as any, params: birthdayGiftId ? { giftId: birthdayGiftId } : undefined });
+    return;
+  }
   const couponId = asString(data?.couponId);
   if (couponId) {
     router.push({
@@ -180,7 +186,6 @@ export function navigateToNotificationSource(
 
   const merchantId = asString(data?.merchantId);
   const areaId = asString(data?.areaId);
-  const sourceType = asString(data?.sourceType);
   const grouped = isTruthy(data?.grouped);
   if (
     merchantId ||

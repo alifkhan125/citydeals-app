@@ -28,6 +28,7 @@ export default function RootLayout() {
         <Stack.Screen name="screens/change-password" />
         <Stack.Screen name="screens/help-support" />
         <Stack.Screen name="screens/terms-of-use" />
+        <Stack.Screen name="screens/birthday-gift" options={{ presentation: "card", animation: "slide_from_right" }} />
         <Stack.Screen name="deals/[id]" />
         <Stack.Screen name="c/[slug]" />
       </Stack>

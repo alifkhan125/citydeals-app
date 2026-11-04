@@ -43,6 +43,9 @@ function getNotificationIcon(data?: Record<string, any> | null): {
   if (data?.merchantId) {
     return { name: "location", bg: "bg-blue-50", color: "#3b82f6" };
   }
+  if (data?.sourceType === "BIRTHDAY_GIFT" || data?.sourceType === "BIRTHDAY") {
+    return { name: "gift", bg: "bg-orange-50", color: "#ea580c" };
+  }
   if (data?.sendTo === "AREA") {
     return { name: "compass", bg: "bg-purple-50", color: "#8b5cf6" };
   }

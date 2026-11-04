@@ -39,6 +39,14 @@ export const ENDPOINTS = {
     LIST: "/notifications",
     SETTINGS: "/me/notifications",
   },
+  BIRTHDAY_GIFTS: {
+    AVAILABLE: "/birthday-gifts/available",
+    CLAIMS: "/birthday-gifts/my-claims",
+    CLAIM: (id: string) => `/birthday-gifts/${id}/claim`,
+  },
+  SETTINGS: {
+    STORE_LINKS: "/settings/store-links",
+  },
   SUPPORT: {
     CREATE_TICKET: "/support/tickets",
   },

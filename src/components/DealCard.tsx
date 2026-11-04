@@ -27,12 +27,18 @@ interface DealCardProps {
   deal: DealItem;
   onPressOpen?: (deal: DealItem) => void;
   onToggleFavorite?: (deal: DealItem, currentFavorite?: boolean) => void;
+  actionTitle?: string;
+  actionDisabled?: boolean;
+  actionLoading?: boolean;
 }
 
 export default function DealCard({
   deal,
   onPressOpen,
   onToggleFavorite,
+  actionTitle,
+  actionDisabled = false,
+  actionLoading = false,
 }: DealCardProps) {
   const { t } = useTranslation();
   const isFavorite = Boolean(deal.isFavorite);
@@ -143,8 +149,10 @@ export default function DealCard({
 
       {/* Action CTA Button */}
       <PrimaryButton
-        title={t("common.open", "Open")}
+        title={actionTitle || t("common.open", "Open")}
         onPress={() => onPressOpen?.(deal)}
+        disabled={actionDisabled}
+        loading={actionLoading}
         className="mt-3.5"
       />
     </View>

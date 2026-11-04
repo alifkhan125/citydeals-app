@@ -27,6 +27,7 @@ import {
   trackCouponShare,
 } from "../../utils/shareUtils";
 import { useTranslation } from "react-i18next";
+import { settingsApi } from "../../features/settings/services/settingsApi";
 
 const fallbackPlaceholder = require("../../../assets/images/placeholder-deal.jpg");
 
@@ -62,6 +63,7 @@ export default function CouponDetailsScreen() {
   const [now, setNow] = useState(Date.now);
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const [shareBaseUrl, setShareBaseUrl] = useState<string | null>(null);
 
   // Modals
   const [isAuthPromptVisible, setIsAuthPromptVisible] = useState(false);
@@ -105,6 +107,12 @@ export default function CouponDetailsScreen() {
   }, [dealId, sharedSlug, isLoggedIn]);
 
   useEffect(() => {
+    settingsApi.getAppRedirectSettings()
+      .then((settings) => setShareBaseUrl(settings.baseUrl?.replace(/\/$/, "") || null))
+      .catch(() => setShareBaseUrl(null));
+  }, []);
+
+  useEffect(() => {
     if (!redemptionAvailableAt) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
@@ -127,7 +135,10 @@ export default function CouponDetailsScreen() {
   const dealDescription = coupon?.description || params.dealDescription || "Show this coupon to get instant savings at checkout.";
   const merchantName = coupon?.merchant?.name || "Partner Merchant";
   const merchantAddress = coupon?.merchant?.address || (coupon?.area ? `${coupon.area.name}, ${coupon.area.city || ""}` : "Store location in-app");
-  const dealUrl = `https://citydeals.ai/c/${coupon?.shareSlug || sharedSlug || dealId}`;
+  const configuredBaseUrl = shareBaseUrl || process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/api\/?$/, "").replace(/\/$/, "") || "";
+  const dealUrl = configuredBaseUrl
+    ? `${configuredBaseUrl}/c/${coupon?.shareSlug || sharedSlug || dealId}/open`
+    : "";
 
   // Image Source Resolution with bulletproof fallback
   const couponImageUrl = coupon?.imageUrl;

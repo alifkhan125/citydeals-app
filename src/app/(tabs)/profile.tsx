@@ -335,6 +335,22 @@ export default function ProfileScreen() {
             <Feather name="chevron-right" size={20} color="#9ca3af" />
           </TouchableOpacity>
 
+          {/* Birthday gift */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => {
+              if (!isLoggedIn) router.push("/(auth)/login" as any);
+              else router.push("/screens/birthday-gift" as any);
+            }}
+            className="bg-white border border-neutral-100 rounded-2xl px-4 h-[60px] flex-row items-center justify-between"
+          >
+            <View className="flex-row items-center flex-1">
+              <Feather name="gift" size={20} color="#ea580c" />
+              <Text className="text-neutral-800 font-semibold text-base ml-3.5">Birthday Gift</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#9ca3af" />
+          </TouchableOpacity>
+
           {/* Language */}
           <TouchableOpacity
             activeOpacity={0.7}

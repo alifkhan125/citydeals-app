@@ -53,6 +53,7 @@ export interface Coupon {
   terms?: string | null;
   shareSlug: string;
   status: 'ACTIVE' | 'ARCHIVED' | 'INACTIVE' | 'EXPIRED' | 'SUSPENDED';
+  audience?: 'ALL_USERS' | 'BIRTHDAY_USERS_ONLY' | 'ALL_USERS_AND_BIRTHDAY_GIFT';
   startsAt?: string | null;
   expiresAt?: string | null;
   areaId?: string;

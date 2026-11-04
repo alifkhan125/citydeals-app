@@ -18,10 +18,11 @@ import PrimaryButton from "../../components/PrimaryButton";
 import LanguageBottomSheet, { LANGUAGES } from "../../components/LanguageBottomSheet";
 import { useAuthMutations } from "../../features/auth/hooks/useAuthMutations";
 import { useTranslation } from "react-i18next";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 export default function LoginScreen() {
   const { t, i18n } = useTranslation();
-  const { loginMutation, googleLoginMutation } = useAuthMutations();
+  const { loginMutation, googleLoginMutation, appleLoginMutation } = useAuthMutations();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -96,6 +97,35 @@ export default function LoginScreen() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    try {
+      if (!(await AppleAuthentication.isAvailableAsync())) {
+        toast.error("Apple Sign-In Unavailable", { description: "Apple Sign-In is available on iOS devices only." });
+        return;
+      }
+
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) throw new Error("Apple did not return an identity token.");
+
+      const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+        .filter(Boolean)
+        .join(" ");
+      appleLoginMutation.mutate({
+        identityToken: credential.identityToken,
+        email: credential.email || undefined,
+        fullName: fullName || undefined,
+      });
+    } catch (error: any) {
+      if (error?.code === "ERR_REQUEST_CANCELED") return;
+      toast.error("Apple Sign-In Failed", { description: error?.message || "An error occurred during sign in." });
+    }
+  };
+
   const handleContinueAsGuest = () => {
     router.replace("/(tabs)" as any);
   };
@@ -129,6 +159,7 @@ export default function LoginScreen() {
               </Text>
               <Feather name="chevron-down" size={13} color="#64748b" />
             </TouchableOpacity>
+
           </View>
 
           <View style={{ maxWidth: 460, width: "100%", alignSelf: "center" }} className="flex-1 justify-center my-auto">
@@ -297,6 +328,16 @@ export default function LoginScreen() {
                 {t("auth.continue_with_google", "Continue with Google")}
               </Text>
             </TouchableOpacity>
+
+            {Platform.OS === "ios" && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={12}
+                onPress={handleAppleSignIn}
+                style={{ width: "100%", height: 48, marginTop: 12 }}
+              />
+            )}
 
             {/* Footer Sign Up Link */}
             <View className="flex-row justify-center items-center mt-1">

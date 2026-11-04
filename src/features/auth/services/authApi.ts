@@ -18,6 +18,16 @@ export const authApi = {
     return data?.data || data;
   },
 
+  appleLogin: async (payload: {
+    identityToken: string;
+    email?: string;
+    fullName?: string;
+    nonce?: string;
+  }): Promise<AuthResponse> => {
+    const { data } = await apiClient.post<any>('/auth/apple', payload);
+    return data?.data || data;
+  },
+
   register: async (credentials: any): Promise<AuthResponse> => {
     const { data } = await apiClient.post<any>(ENDPOINTS.AUTH.REGISTER, credentials);
     return data?.data || data;

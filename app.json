@@ -92,6 +92,7 @@
         }
       ],
       "@react-native-google-signin/google-signin",
+      "expo-apple-authentication",
       "./plugins/with-http-api"
     ],
     "experiments": {

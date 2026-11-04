@@ -53,6 +53,17 @@ export const useAuthMutations = () => {
     },
   });
 
+  const appleLoginMutation = useMutation({
+    mutationFn: authApi.appleLogin,
+    onSuccess: (data) => {
+      handleSuccess(data, "/(tabs)");
+      toast.success("Welcome back!", { description: "Logged in with Apple." });
+    },
+    onError: (error) => {
+      toast.error("Apple Login Failed", { description: handleApiError(error) });
+    },
+  });
+
   const adminLoginMutation = useMutation({
     mutationFn: authApi.adminLogin,
     onSuccess: (data) => {
@@ -99,6 +110,7 @@ export const useAuthMutations = () => {
   return {
     loginMutation,
     googleLoginMutation,
+    appleLoginMutation,
     adminLoginMutation,
     signupMutation,
     logoutMutation,

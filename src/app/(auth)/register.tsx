@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { useState, useMemo } from "react";
 import {
   Image,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -23,6 +24,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 export default function RegisterScreen() {
   const { t, i18n } = useTranslation();
   const { signupMutation, googleLoginMutation, appleLoginMutation } = useAuthMutations();
+  const isGoogleSigningIn = googleLoginMutation.isPending;
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -76,6 +78,7 @@ export default function RegisterScreen() {
   };
 
   const handleAppleSignIn = async () => {
+    if (isGoogleSigningIn) return;
     try {
       if (!(await AppleAuthentication.isAvailableAsync())) {
         toast.error("Apple Sign-In Unavailable", { description: "Apple Sign-In is available on iOS devices only." });
@@ -125,10 +128,11 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={{ maxWidth: 460, width: "100%", alignSelf: "center" }}>
+          <View style={{ maxWidth: 460, width: "100%", alignSelf: "center", opacity: isGoogleSigningIn ? 0.55 : 1 }}>
             {/* Top Bar with Language Selector */}
             <View className="flex-row justify-end items-center mb-1">
             <TouchableOpacity
+              disabled={isGoogleSigningIn}
               activeOpacity={0.7}
               onPress={() => setIsLanguageSheetOpen(true)}
               className="flex-row items-center bg-neutral-100 rounded-full px-3 py-1.5 border border-neutral-200"
@@ -171,6 +175,7 @@ export default function RegisterScreen() {
               <View className="flex-row items-center border border-neutral-200 rounded-xl px-3.5 h-12 bg-white focus:border-orange-500">
                 <Feather name="user" size={18} color="#ea580c" />
                 <TextInput
+                  editable={!isGoogleSigningIn}
                   value={fullName}
                   onChangeText={setFullName}
                   placeholder={t("auth.enter_full_name", "Enter your full name")}
@@ -188,6 +193,7 @@ export default function RegisterScreen() {
               <View className="flex-row items-center border border-neutral-200 rounded-xl px-3.5 h-12 bg-white focus:border-orange-500">
                 <Feather name="mail" size={18} color="#ea580c" />
                 <TextInput
+                  editable={!isGoogleSigningIn}
                   value={email}
                   onChangeText={setEmail}
                   placeholder={t("auth.enter_email", "Enter your email address")}
@@ -207,6 +213,7 @@ export default function RegisterScreen() {
               <View className="flex-row items-center border border-neutral-200 rounded-xl px-3.5 h-12 bg-white focus:border-orange-500">
                 <Feather name="phone" size={18} color="#ea580c" />
                 <TextInput
+                  editable={!isGoogleSigningIn}
                   value={phone}
                   onChangeText={setPhone}
                   placeholder={t("auth.enter_phone", "Enter phone number")}
@@ -225,6 +232,7 @@ export default function RegisterScreen() {
               <View className="flex-row items-center border border-neutral-200 rounded-xl px-3.5 h-12 bg-white focus:border-orange-500">
                 <Feather name="lock" size={18} color="#ea580c" />
                 <TextInput
+                  editable={!isGoogleSigningIn}
                   value={password}
                   onChangeText={setPassword}
                   placeholder={t("auth.enter_password", "Enter your password")}
@@ -233,6 +241,7 @@ export default function RegisterScreen() {
                   className="flex-1 ml-2.5 text-neutral-900 text-base py-0"
                 />
                 <TouchableOpacity
+                  disabled={isGoogleSigningIn}
                   activeOpacity={0.7}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   onPress={() => setShowPassword(!showPassword)}
@@ -254,6 +263,7 @@ export default function RegisterScreen() {
               <View className="flex-row items-center border border-neutral-200 rounded-xl px-3.5 h-12 bg-white focus:border-orange-500">
                 <Feather name="lock" size={18} color="#ea580c" />
                 <TextInput
+                  editable={!isGoogleSigningIn}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder={t("auth.enter_confirm_password", "Confirm your password")}
@@ -262,6 +272,7 @@ export default function RegisterScreen() {
                   className="flex-1 ml-2.5 text-neutral-900 text-base py-0"
                 />
                 <TouchableOpacity
+                  disabled={isGoogleSigningIn}
                   activeOpacity={0.7}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -277,6 +288,7 @@ export default function RegisterScreen() {
 
             {/* Terms & Conditions Checkbox */}
             <TouchableOpacity
+              disabled={isGoogleSigningIn}
               activeOpacity={0.8}
               onPress={() => setAgreeTerms(!agreeTerms)}
               className="flex-row items-center mt-0.5"
@@ -306,6 +318,7 @@ export default function RegisterScreen() {
               title={t("auth.register_title", "Create Account")}
               onPress={handleCreateAccount}
               loading={signupMutation.isPending}
+              disabled={isGoogleSigningIn}
               className="mt-1"
             />
 
@@ -320,14 +333,17 @@ export default function RegisterScreen() {
 
             {/* Continue with Google */}
             <TouchableOpacity
+              disabled={isGoogleSigningIn}
               activeOpacity={0.85}
               onPress={handleGoogleSignIn}
               className="w-full bg-neutral-50 border border-neutral-200 h-12 rounded-xl flex-row items-center justify-center active:bg-neutral-100"
             >
-              <Ionicons name="logo-google" size={18} color="#EA4335" />
-              <Text className="text-neutral-800 font-semibold text-base ml-2.5">
-                {t("auth.continue_with_google", "Continue with Google")}
-              </Text>
+              {isGoogleSigningIn ? <ActivityIndicator color="#ea580c" /> : <>
+                <Ionicons name="logo-google" size={18} color="#EA4335" />
+                <Text className="text-neutral-800 font-semibold text-base ml-2.5">
+                  {t("auth.continue_with_google", "Continue with Google")}
+                </Text>
+              </>}
             </TouchableOpacity>
 
             {Platform.OS === "ios" && (
@@ -346,6 +362,7 @@ export default function RegisterScreen() {
                 {t("auth.already_have_account", "Already have an account?")}{" "}
               </Text>
               <TouchableOpacity
+                disabled={isGoogleSigningIn}
                 activeOpacity={0.7}
                 onPress={() => router.push("/login" as any)}
               >
@@ -357,6 +374,7 @@ export default function RegisterScreen() {
 
             {/* Continue as Guest Link */}
             <TouchableOpacity
+              disabled={isGoogleSigningIn}
               activeOpacity={0.7}
               onPress={handleContinueAsGuest}
               className="items-center justify-center py-2 mt-1"

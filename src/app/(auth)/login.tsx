@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { useState, useMemo } from "react";
 import {
   Image,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -23,6 +24,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 export default function LoginScreen() {
   const { t, i18n } = useTranslation();
   const { loginMutation, googleLoginMutation, appleLoginMutation } = useAuthMutations();
+  const isGoogleSigningIn = googleLoginMutation.isPending;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -98,6 +100,7 @@ export default function LoginScreen() {
   };
 
   const handleAppleSignIn = async () => {
+    if (isGoogleSigningIn) return;
     try {
       if (!(await AppleAuthentication.isAvailableAsync())) {
         toast.error("Apple Sign-In Unavailable", { description: "Apple Sign-In is available on iOS devices only." });
@@ -147,8 +150,9 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Top Bar with Language Selector */}
-          <View style={{ maxWidth: 460, width: "100%", alignSelf: "center" }} className="flex-row justify-end items-center mb-1">
+          <View style={{ maxWidth: 460, width: "100%", alignSelf: "center", opacity: isGoogleSigningIn ? 0.55 : 1 }} className="flex-row justify-end items-center mb-1">
             <TouchableOpacity
+              disabled={isGoogleSigningIn}
               activeOpacity={0.7}
               onPress={() => setIsLanguageSheetOpen(true)}
               className="flex-row items-center bg-neutral-100 rounded-full px-3 py-1.5 border border-neutral-200"
@@ -162,7 +166,7 @@ export default function LoginScreen() {
 
           </View>
 
-          <View style={{ maxWidth: 460, width: "100%", alignSelf: "center" }} className="flex-1 justify-center my-auto">
+          <View style={{ maxWidth: 460, width: "100%", alignSelf: "center", opacity: isGoogleSigningIn ? 0.55 : 1 }} className="flex-1 justify-center my-auto">
             {/* Centered Logo */}
           <View className="items-center mt-1 mb-2">
             <Image
@@ -202,6 +206,7 @@ export default function LoginScreen() {
                   color={emailError ? "#ef4444" : "#ea580c"}
                 />
                 <TextInput
+                  editable={!isGoogleSigningIn}
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
@@ -239,6 +244,7 @@ export default function LoginScreen() {
                   color={passwordError ? "#ef4444" : "#ea580c"}
                 />
                 <TextInput
+                  editable={!isGoogleSigningIn}
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
@@ -250,6 +256,7 @@ export default function LoginScreen() {
                   className="flex-1 ml-2.5 text-neutral-900 text-base py-0"
                 />
                 <TouchableOpacity
+                  disabled={isGoogleSigningIn}
                   activeOpacity={0.7}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   onPress={() => setShowPassword(!showPassword)}
@@ -271,6 +278,7 @@ export default function LoginScreen() {
             {/* Remember Me & Forgot Password */}
             <View className="flex-row items-center justify-between mt-0.5">
               <TouchableOpacity
+                disabled={isGoogleSigningIn}
                 activeOpacity={0.8}
                 onPress={() => setRememberMe(!rememberMe)}
                 className="flex-row items-center"
@@ -291,6 +299,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
+                disabled={isGoogleSigningIn}
                 activeOpacity={0.7}
                 onPress={() => router.push("/(auth)/forgot-password" as any)}
               >
@@ -305,6 +314,7 @@ export default function LoginScreen() {
               title={t("auth.sign_in", "Log In")}
               onPress={handleLogin}
               loading={loginMutation.isPending}
+              disabled={isGoogleSigningIn}
               className="mt-1"
             />
 
@@ -319,14 +329,17 @@ export default function LoginScreen() {
 
             {/* Continue with Google */}
             <TouchableOpacity
+              disabled={isGoogleSigningIn}
               activeOpacity={0.85}
               onPress={handleGoogleSignIn}
               className="w-full bg-neutral-50 border border-neutral-200 h-12 rounded-xl flex-row items-center justify-center active:bg-neutral-100"
             >
-              <Ionicons name="logo-google" size={18} color="#EA4335" />
-              <Text className="text-neutral-800 font-semibold text-base ml-2.5">
-                {t("auth.continue_with_google", "Continue with Google")}
-              </Text>
+              {isGoogleSigningIn ? <ActivityIndicator color="#ea580c" /> : <>
+                <Ionicons name="logo-google" size={18} color="#EA4335" />
+                <Text className="text-neutral-800 font-semibold text-base ml-2.5">
+                  {t("auth.continue_with_google", "Continue with Google")}
+                </Text>
+              </>}
             </TouchableOpacity>
 
             {Platform.OS === "ios" && (
@@ -345,6 +358,7 @@ export default function LoginScreen() {
                 {t("auth.dont_have_account", "Don't have an account?")}{" "}
               </Text>
               <TouchableOpacity
+                disabled={isGoogleSigningIn}
                 activeOpacity={0.7}
                 onPress={() => router.push("/register" as any)}
               >
@@ -356,6 +370,7 @@ export default function LoginScreen() {
 
             {/* Continue as Guest Link */}
             <TouchableOpacity
+              disabled={isGoogleSigningIn}
               activeOpacity={0.7}
               onPress={handleContinueAsGuest}
               className="items-center justify-center py-2 mt-1"

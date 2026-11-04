@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState, useMemo } from "react";
 import {
+  Alert,
   Modal,
   RefreshControl,
   ScrollView,
@@ -19,6 +20,7 @@ import { useCurrentUser } from "../../features/auth/hooks/useCurrentUser";
 import { useSavedCoupons, useRedeemedCoupons } from "../../features/coupons/hooks/useCoupons";
 import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
+import { authApi } from "../../features/auth/services/authApi";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -66,6 +68,30 @@ export default function ProfileScreen() {
 
   const handleGoToAuth = () => {
     router.push("/(auth)/login" as any);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      t("profile.delete_account"),
+      t("profile.delete_account_warning"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("profile.delete_account_confirm"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await authApi.deleteAccount();
+              useAuthStore.getState().clearSession();
+              router.replace("/(auth)/login" as any);
+            } catch (err: any) {
+              const message = err?.response?.data?.message || err?.message || t("profile.delete_account_error");
+              Alert.alert(t("common.error"), Array.isArray(message) ? message[0] : message);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleRefresh = async () => {
@@ -363,6 +389,19 @@ export default function ProfileScreen() {
             <Feather name="chevron-right" size={20} color="#9ca3af" />
           </TouchableOpacity>
         </View>
+
+        {isLoggedIn && (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={handleDeleteAccount}
+            className="bg-white border border-red-200 rounded-2xl py-4 flex-row items-center justify-center mx-4 mt-5"
+          >
+            <Feather name="trash-2" size={20} color="#dc2626" />
+            <Text className="text-red-600 font-bold text-base ml-2">
+              {t("profile.delete_account")}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Log Out or Sign In CTA Button */}
         {isLoggedIn ? (

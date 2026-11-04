@@ -27,6 +27,11 @@ export const authApi = {
     await apiClient.post(ENDPOINTS.AUTH.LOGOUT);
   },
 
+  deleteAccount: async (): Promise<{ deleted: boolean; message: string }> => {
+    const { data } = await apiClient.delete<any>(ENDPOINTS.USERS.DELETE_ME);
+    return data?.data || data;
+  },
+
   getCurrentUser: async (): Promise<User> => {
     const { data } = await apiClient.get<any>(ENDPOINTS.AUTH.ME);
     return data?.data || data;

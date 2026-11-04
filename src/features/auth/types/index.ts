@@ -1,5 +1,5 @@
 export type Role = "ADMIN" | "ADVERTISER" | "USER";
-export type UserStatus = "ACTIVE" | "SUSPENDED" | "BANNED";
+export type UserStatus = "ACTIVE" | "SUSPENDED" | "BANNED" | "DELETED";
 
 export interface Area {
   id: string;

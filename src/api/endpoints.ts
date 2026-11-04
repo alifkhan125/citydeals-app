@@ -15,6 +15,7 @@ export const ENDPOINTS = {
   },
   USERS: {
     ME: "/me",
+    DELETE_ME: "/me",
     AVATAR: "/me/avatar",
     LANGUAGE: "/me/language",
   },

@@ -10,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -62,6 +63,8 @@ export default function CouponDetailsScreen() {
   const [redemptionAvailableAt, setRedemptionAvailableAt] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now);
   const [isRedeeming, setIsRedeeming] = useState(false);
+  const [isCouponCodeModalVisible, setIsCouponCodeModalVisible] = useState(false);
+  const [couponCodeInput, setCouponCodeInput] = useState("");
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const [shareBaseUrl, setShareBaseUrl] = useState<string | null>(null);
 
@@ -205,20 +208,23 @@ export default function CouponDetailsScreen() {
       return;
     }
 
-    // Perform live redemption
-    executeRedeemCoupon();
+    setCouponCodeInput("");
+    setIsCouponCodeModalVisible(true);
   };
 
-  const executeRedeemCoupon = async () => {
+  const executeRedeemCoupon = async (couponCode: string) => {
     try {
       setIsRedeeming(true);
-      const result = await couponsApi.redeemCoupon(activeCouponId);
+      const result = await couponsApi.redeemCoupon(activeCouponId, couponCode);
+      setIsCouponCodeModalVisible(false);
+      setCouponCodeInput("");
       setIsRedeemed(true);
       setRedemptionAvailableAt(result?.redemptionAvailableAt || null);
       setNow(Date.now());
       queryClient.invalidateQueries({ queryKey: REDEEMED_COUPONS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       showToast("Coupon redeemed successfully!");
+      await handleShareDeal();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to redeem coupon";
       const errorText = Array.isArray(msg) ? msg[0] : msg;
@@ -246,6 +252,15 @@ export default function CouponDetailsScreen() {
     } finally {
       setIsRedeeming(false);
     }
+  };
+
+  const handleCouponCodeSubmit = () => {
+    const code = couponCodeInput.trim();
+    if (!code) {
+      toast.error("Enter the coupon code provided by the business.");
+      return;
+    }
+    void executeRedeemCoupon(code);
   };
 
   // Save / Favorite Toggle Handler
@@ -711,6 +726,48 @@ function ensureHttps(url?: string | null): string | null {
       </ScrollView>
 
       {/* Guest Authentication Required Modal */}
+      <Modal
+        visible={isCouponCodeModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => !isRedeeming && setIsCouponCodeModalVisible(false)}
+      >
+        <View style={{ paddingBottom: Math.max(insets.bottom, 24) }} className="flex-1 bg-black/60 items-center justify-center px-5">
+          <View className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl">
+            <Text className="text-xl font-extrabold text-neutral-900">Enter coupon code</Text>
+            <Text className="text-neutral-500 text-sm mt-2 leading-5">
+              Enter the coupon code provided by the business to redeem this offer.
+            </Text>
+            <TextInput
+              value={couponCodeInput}
+              onChangeText={setCouponCodeInput}
+              placeholder="Enter coupon code"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              editable={!isRedeeming}
+              className="w-full h-12 border border-neutral-200 rounded-xl px-4 mt-5 text-neutral-900 font-semibold"
+            />
+            <View className="flex-row gap-3 mt-5">
+              <TouchableOpacity
+                disabled={isRedeeming}
+                onPress={() => setIsCouponCodeModalVisible(false)}
+                className="flex-1 rounded-xl bg-neutral-100 py-3.5 items-center"
+              >
+                <Text className="text-neutral-700 font-bold">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={isRedeeming}
+                onPress={handleCouponCodeSubmit}
+                className="flex-1 rounded-xl bg-orange-500 py-3.5 items-center"
+              >
+                {isRedeeming ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold">Verify</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Modal
         visible={isAuthPromptVisible}
         transparent

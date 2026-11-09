@@ -21,6 +21,7 @@ import { useSavedCoupons, useRedeemedCoupons } from "../../features/coupons/hook
 import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
 import { authApi } from "../../features/auth/services/authApi";
+import ConfirmationModal from "../../components/ConfirmationModal";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -55,15 +56,11 @@ export default function ProfileScreen() {
   const [isLanguageSheetOpen, setIsLanguageSheetOpen] = useState(false);
   const [isRedeemedModalOpen, setIsRedeemedModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [confirmation, setConfirmation] = useState<"logout" | "delete" | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = () => {
-    logoutMutation.mutate(undefined, {
-      onSettled: () => {
-        setTimeout(() => {
-          router.replace("/(auth)/login" as any);
-        }, 50);
-      },
-    });
+    setConfirmation("logout");
   };
 
   const handleGoToAuth = () => {
@@ -71,27 +68,29 @@ export default function ProfileScreen() {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      t("profile.delete_account"),
-      t("profile.delete_account_warning"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("profile.delete_account_confirm"),
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await authApi.deleteAccount();
-              useAuthStore.getState().clearSession();
-              router.replace("/(auth)/login" as any);
-            } catch (err: any) {
-              const message = err?.response?.data?.message || err?.message || t("profile.delete_account_error");
-              Alert.alert(t("common.error"), Array.isArray(message) ? message[0] : message);
-            }
-          },
-        },
-      ]
-    );
+    setConfirmation("delete");
+  };
+
+  const confirmAction = () => {
+    if (confirmation === "logout") {
+      setConfirmation(null);
+      logoutMutation.mutate(undefined, {
+        onSettled: () => setTimeout(() => router.replace("/(auth)/login" as any), 50),
+      });
+      return;
+    }
+    if (confirmation === "delete") {
+      setIsDeleting(true);
+      authApi.deleteAccount().then(() => {
+        setConfirmation(null);
+        useAuthStore.getState().clearSession();
+        router.replace("/(auth)/login" as any);
+      }).catch((err: any) => {
+        const message = err?.response?.data?.message || err?.message || t("profile.delete_account_error");
+        setConfirmation(null);
+        Alert.alert(t("common.error"), Array.isArray(message) ? message[0] : message);
+      }).finally(() => setIsDeleting(false));
+    }
   };
 
   const handleRefresh = async () => {
@@ -132,6 +131,18 @@ export default function ProfileScreen() {
 
   return (
     <View className="flex-1 bg-neutral-50">
+      <ConfirmationModal
+        visible={confirmation !== null}
+        title={confirmation === "delete" ? t("profile.delete_account") : t("profile.log_out", "Log Out")}
+        message={confirmation === "delete" ? t("profile.delete_account_warning") : t("profile.log_out_confirm_message", "Are you sure you want to log out of your account?")}
+        confirmLabel={confirmation === "delete" ? t("profile.delete_account_confirm") : t("profile.log_out", "Log Out")}
+        cancelLabel={t("common.cancel", "Cancel")}
+        destructive={confirmation === "delete"}
+        iconName={confirmation === "delete" ? "trash-2" : "log-out"}
+        loading={isDeleting || logoutMutation.isPending}
+        onCancel={() => !isDeleting && !logoutMutation.isPending && setConfirmation(null)}
+        onConfirm={confirmAction}
+      />
       <StatusBar style="light" />
 
       {/* Reusable Curved Header */}

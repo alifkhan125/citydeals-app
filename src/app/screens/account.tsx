@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
@@ -47,6 +48,7 @@ export default function AccountSettingScreen() {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   useEffect(() => {
@@ -56,6 +58,7 @@ export default function AccountSettingScreen() {
   }, [user?.dateOfBirth, user?.fullName, user?.phoneNumber]);
 
   const avatarUri =
+    localAvatarUri ||
     user?.profilePictureUrl ||
     (user?.fullName
       ? `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -101,8 +104,11 @@ export default function AccountSettingScreen() {
 
       if (result.canceled || !result.assets[0]?.uri) return;
 
+      const selectedUri = result.assets[0].uri;
+      // Keep the selected image visible while the upload is in progress.
+      setLocalAvatarUri(selectedUri);
       setIsUploadingAvatar(true);
-      const updatedUser = await authApi.uploadAvatar(result.assets[0].uri);
+      const updatedUser = await authApi.uploadAvatar(selectedUri);
       useAuthStore.getState().updateUser(updatedUser);
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       toast.success("Profile photo updated");
@@ -187,29 +193,43 @@ export default function AccountSettingScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Avatar Section */}
-          <View className="items-center mt-6">
-            <View className="relative">
+          <View className="mx-4 mt-5 items-center rounded-3xl border border-orange-100 bg-white px-5 py-5 shadow-sm">
+            <View className="relative" style={{ width: 112, height: 112 }}>
               <Image
+                key={avatarUri}
                 source={{ uri: avatarUri }}
-                className="w-24 h-24 rounded-full bg-neutral-200 border-2 border-orange-100"
+                className="h-28 w-28 rounded-full border-4 border-orange-50 bg-neutral-200"
+                style={{ width: 112, height: 112, borderRadius: 56 }}
                 contentFit="cover"
+                transition={150}
               />
+              {isUploadingAvatar && (
+                <View className="absolute inset-1 items-center justify-center rounded-full bg-black/35">
+                  <ActivityIndicator color="#ffffff" size="small" />
+                </View>
+              )}
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={handlePhotoTap}
-                className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white border border-neutral-200 items-center justify-center shadow-xs"
+                disabled={isUploadingAvatar}
+                accessibilityRole="button"
+                accessibilityLabel={t("account.tap_to_change_photo")}
+                style={{ position: "absolute", right: -2, bottom: -2 }}
+                className="h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-orange-500 shadow-lg"
               >
-                <Feather name="camera" size={16} color="#1e293b" />
+                <Feather name="camera" size={18} color="#ffffff" />
               </TouchableOpacity>
             </View>
 
+            <Text className="mt-3 text-base font-bold text-[#0f3b5e]">{t("account.profile_photo", "Profile photo")}</Text>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={handlePhotoTap}
               disabled={isUploadingAvatar}
-              className="mt-2.5"
+              className="mt-2 flex-row items-center rounded-full bg-orange-50 px-4 py-2.5"
             >
-              <Text className="text-neutral-500 text-sm font-normal">
+              <Feather name="edit-2" size={14} color="#ea580c" />
+              <Text className="ml-2 text-sm font-bold text-orange-600">
                 {isUploadingAvatar ? "Uploading photo..." : t("account.tap_to_change_photo")}
               </Text>
             </TouchableOpacity>

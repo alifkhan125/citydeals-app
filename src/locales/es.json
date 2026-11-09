@@ -44,6 +44,7 @@
     "sign_in": "Iniciar Sesión",
     "sign_in_register": "Iniciar Sesión / Registrarse",
     "log_out": "Cerrar Sesión",
+    "log_out_confirm_message": "¿Estás seguro de que deseas cerrar sesión en tu cuenta?",
     "saved_coupons": "Cupones guardados",
     "coupon_redeemed": "Cupones canjeados",
     "general": "General",

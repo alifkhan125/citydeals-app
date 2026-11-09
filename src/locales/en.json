@@ -44,6 +44,7 @@
     "sign_in": "Sign In",
     "sign_in_register": "Sign In / Register",
     "log_out": "Log Out",
+    "log_out_confirm_message": "Are you sure you want to log out of your account?",
     "saved_coupons": "Save coupons",
     "coupon_redeemed": "Coupon redeemed",
     "general": "General",

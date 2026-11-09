@@ -6,14 +6,14 @@
   "build": {
     "development": {
       "env": {
-        "EXPO_PUBLIC_BASE_URL": "http://16.178.137.42/citydeals/api"
+        "EXPO_PUBLIC_BASE_URL": "https://playappllc.com/citydeals/api"
       },
       "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
       "env": {
-        "EXPO_PUBLIC_BASE_URL": "http://16.178.137.42/citydeals/api"
+        "EXPO_PUBLIC_BASE_URL": "https://playappllc.com/citydeals/api"
       },
       "distribution": "internal",
       "android": {
@@ -22,7 +22,7 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_BASE_URL": "http://16.178.137.42/citydeals/api"
+        "EXPO_PUBLIC_BASE_URL": "https://playappllc.com/citydeals/api"
       },
       "autoIncrement": true
     }

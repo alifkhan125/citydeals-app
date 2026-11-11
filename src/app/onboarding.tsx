@@ -16,16 +16,21 @@ import PrimaryButton from "../components/PrimaryButton";
 import { ONBOARDING_DATA, OnboardingSlide } from "../config/constants";
 import { useAuthStore } from "../features/auth/store/useAuthStore";
 import { useTranslation } from "react-i18next";
+import { useResponsive } from "../utils/useResponsive";
 
 export default function OnboardingScreen() {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
+  const { isTablet, scale } = useResponsive();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
 
+  // Content width per slide: full screen on phones, clamped on tablet
+  const slideWidth = width;
+
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollOffset = event.nativeEvent.contentOffset.x;
-    const index = Math.round(scrollOffset / width);
+    const index = Math.round(scrollOffset / slideWidth);
     if (index >= 0 && index < ONBOARDING_DATA.length && index !== currentIndex) {
       setCurrentIndex(index);
     }
@@ -77,7 +82,10 @@ export default function OnboardingScreen() {
       <StatusBar style="dark" />
 
       {/* Top Header with CityDeals logo / Skip Button */}
-      <View className="flex-row justify-between items-center px-6 pt-2 h-16">
+      <View
+        style={{ maxWidth: 640, width: "100%", alignSelf: "center" }}
+        className="flex-row justify-between items-center px-6 pt-2 h-16"
+      >
         <Image
           source={require("../../assets/images/city-deals-logo.png")}
           className="h-10 w-36"
@@ -111,34 +119,54 @@ export default function OnboardingScreen() {
           const content = getSlideContent(item);
           return (
             <View
-              style={{ width }}
+              style={{ width: slideWidth }}
               className="flex-1 items-center justify-center px-6"
             >
-              {/* Image Illustration with Soft Ambient Glow */}
-              <View className="items-center justify-center relative my-4 w-full">
-                <View className="absolute w-64 h-64 rounded-full bg-orange-100/60 blur-2xl" />
-                <Image
-                  source={item.image}
-                  className="w-72 h-64"
-                  resizeMode="contain"
-                />
-              </View>
-
-              {/* Content Details */}
-              <View className="items-center mt-6 max-w-md px-2">
-                <View className="bg-orange-50 border border-orange-200/60 px-4 py-1.5 rounded-full mb-3.5">
-                  <Text className="text-orange-600 text-base font-bold uppercase tracking-wider">
-                    {content.badge}
-                  </Text>
+              <View style={{ maxWidth: 540, width: "100%", alignItems: "center" }}>
+                {/* Image Illustration with Soft Ambient Glow */}
+                <View className="items-center justify-center relative my-4 w-full">
+                  <View
+                    style={{
+                      width: isTablet ? 340 : 256,
+                      height: isTablet ? 340 : 256,
+                    }}
+                    className="absolute rounded-full bg-orange-100/60 blur-2xl"
+                  />
+                  <Image
+                    source={item.image}
+                    style={{
+                      width: isTablet ? 360 : 288,
+                      height: isTablet ? 320 : 256,
+                    }}
+                    resizeMode="contain"
+                  />
                 </View>
 
-                <Text className="text-2xl font-extrabold text-neutral-900 text-center tracking-tight leading-tight">
-                  {content.title}
-                </Text>
+                {/* Content Details */}
+                <View className="items-center mt-6 max-w-lg px-2">
+                  <View className="bg-orange-50 border border-orange-200/60 px-5 py-2 rounded-full mb-4">
+                    <Text
+                      style={{ fontSize: scale(14) }}
+                      className="text-orange-600 font-bold uppercase tracking-wider"
+                    >
+                      {content.badge}
+                    </Text>
+                  </View>
 
-                <Text className="text-neutral-600 text-center text-base leading-6 mt-3 font-normal">
-                  {content.desc}
-                </Text>
+                  <Text
+                    style={{ fontSize: scale(26) }}
+                    className="font-extrabold text-neutral-900 text-center tracking-tight leading-tight"
+                  >
+                    {content.title}
+                  </Text>
+
+                  <Text
+                    style={{ fontSize: scale(16), lineHeight: scale(24) }}
+                    className="text-neutral-600 text-center mt-3 font-normal"
+                  >
+                    {content.desc}
+                  </Text>
+                </View>
               </View>
             </View>
           );
@@ -146,7 +174,10 @@ export default function OnboardingScreen() {
       />
 
       {/* Bottom Controls (Pagination Dots + Action Button) */}
-      <View className="px-6 pb-6 pt-2">
+      <View
+        style={{ maxWidth: 540, width: "100%", alignSelf: "center" }}
+        className="px-6 pb-6 pt-2"
+      >
         {/* Pagination Dots */}
         <View className="flex-row justify-center items-center gap-2 mb-6">
           {ONBOARDING_DATA.map((_, index) => {

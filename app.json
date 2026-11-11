@@ -11,6 +11,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.citydeals.app",
       "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "buildNumber": "1",
       "icon": "./assets/images/icon.png",
       "infoPlist": {

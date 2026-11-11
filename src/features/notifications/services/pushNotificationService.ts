@@ -1,6 +1,5 @@
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
-import Constants from "expo-constants";
 import { InteractionManager, Platform } from "react-native";
 import { router } from "expo-router";
 import { apiClient } from "../../../api/client";
@@ -18,150 +17,123 @@ Notifications.setNotificationHandler({
 });
 
 let cachedPushToken: string | null = null;
-let isPushConfiguredOnDevice = true;
 let lastHandledNotificationKey: string | null = null;
-
-function getExpoProjectId(): string | undefined {
-  return (
-    Constants.easConfig?.projectId ||
-    (Constants.expoConfig?.extra?.eas as { projectId?: string } | undefined)
-      ?.projectId
-  );
-}
+let isPushWarningLogged = false;
 
 export async function setupAndroidNotificationChannels() {
   if (Platform.OS !== "android") return;
 
-  await Notifications.setNotificationChannelAsync("default", {
-    name: "Default",
-    importance: Notifications.AndroidImportance.MAX,
-    vibrationPattern: [0, 250, 250, 250],
-    lightColor: "#ea580c",
-  });
+  try {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "Default",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#ea580c",
+    });
 
-  await Notifications.setNotificationChannelAsync("deals", {
-    name: "Deals & Offers",
-    description: "Notifications about nearby deals and offers",
-    importance: Notifications.AndroidImportance.MAX,
-    vibrationPattern: [0, 250, 250, 250],
-    lightColor: "#ea580c",
-    enableVibrate: true,
-    showBadge: true,
-  });
+    await Notifications.setNotificationChannelAsync("deals", {
+      name: "Deals & Offers",
+      description: "Notifications about nearby deals and offers",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#ea580c",
+      enableVibrate: true,
+      showBadge: true,
+    });
+  } catch (error) {
+    console.warn("[PUSH] Android channel setup failed:", error);
+  }
 }
 
 /**
- * Register for push notifications and return the native device push token.
- * On Android this is the FCM token. On iOS this is the APNs token.
+ * Register for native push notifications and return the direct native device push token:
+ * - Android: Native FCM registration token
+ * - iOS: Native APNs device push token
+ *
+ * Graceful Fallback / Test Mode:
+ * - If running in iOS Simulator or Android emulator, logs a safe informational message without throwing or breaking runtime.
+ * - If push credentials / entitlements are pending, returns null cleanly.
  */
-export async function registerForPushNotificationsAsync(): Promise<
-  string | null
-> {
-  // If already fetched, return cached token
+export async function registerForPushNotificationsAsync(): Promise<string | null> {
   if (cachedPushToken) {
     return cachedPushToken;
   }
 
-  // If already determined that push/Firebase is unconfigured, avoid repeated failing calls
-  if (!isPushConfiguredOnDevice) {
-    return null;
-  }
-
-  // Push notifications only work on physical devices
+  // Push notifications require a physical device on iOS and Android
   if (!Device.isDevice) {
-    console.log("[PUSH] Must use physical device for push notifications");
+    if (!isPushWarningLogged) {
+      console.log(
+        `[PUSH] Running on ${Platform.OS} simulator/emulator. Push token registration runs in test mode (no physical APNs/FCM available).`
+      );
+      isPushWarningLogged = true;
+    }
     return null;
-  }
-
-  // Check existing permission
-  const { status: existingStatus } =
-    await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  // Ask for permission if not granted
-  if (existingStatus !== "granted") {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== "granted") {
-    console.log("[PUSH] Notification permission denied");
-    return null;
-  }
-
-  // Android requires notification channels
-  if (Platform.OS === "android") {
-    await setupAndroidNotificationChannels();
   }
 
   try {
-    let token: string | null = null;
+    // Check & request notification permissions
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
 
-    if (Platform.OS === "ios") {
-      const tokenData = await Notifications.getExpoPushTokenAsync(
-        getExpoProjectId() ? { projectId: getExpoProjectId() } : undefined
-      );
-      token = String(tokenData.data);
-    } else {
-      // Android: attempt native FCM device token first
-      try {
-        const tokenData = await Notifications.getDevicePushTokenAsync();
-        if (tokenData?.data) {
-          token = String(tokenData.data);
-        }
-      } catch (fcmError: any) {
-        const msg = fcmError?.message || String(fcmError);
-        console.warn(
-          "[PUSH] Native FCM token retrieval failed, attempting Expo push token fallback:",
-          msg
-        );
-        if (msg.includes("FIS_AUTH_ERROR")) {
-          isPushConfiguredOnDevice = false;
-          return null;
-        }
-      }
-
-      // If native FCM token wasn't retrieved, fall back to Expo push token
-      if (!token) {
-        try {
-          const expoTokenData = await Notifications.getExpoPushTokenAsync(
-            getExpoProjectId() ? { projectId: getExpoProjectId() } : undefined
-          );
-          if (expoTokenData?.data) {
-            token = String(expoTokenData.data);
-          }
-        } catch (expoErr: any) {
-          console.warn("[PUSH] Expo push token fallback also failed:", expoErr?.message || expoErr);
-        }
-      }
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+        },
+      });
+      finalStatus = status;
     }
 
+    if (finalStatus !== "granted") {
+      console.log("[PUSH] Notification permissions were not granted by the user.");
+      return null;
+    }
+
+    if (Platform.OS === "android") {
+      await setupAndroidNotificationChannels();
+    }
+
+    // Attempt native token resolution: APNs on iOS, FCM on Android
+    const tokenData = await Notifications.getDevicePushTokenAsync();
+    const token = tokenData?.data ? String(tokenData.data) : null;
+
     if (token) {
-      console.log("[PUSH] Resolved push token:", token);
+      console.log(`[PUSH] Plug-and-play active: native ${Platform.OS.toUpperCase()} push token resolved:`, token);
       cachedPushToken = token;
       return token;
     }
 
-    console.warn("[PUSH] No push token could be resolved.");
+    console.warn(`[PUSH] Device token could not be resolved on ${Platform.OS}.`);
     return null;
   } catch (error: any) {
-    const errorMessage = error?.message || String(error);
-    console.warn("[PUSH] Failed to get push token:", errorMessage);
-    if (errorMessage.includes("FIS_AUTH_ERROR")) {
-      isPushConfiguredOnDevice = false;
-    }
+    const errorMsg = error?.message || String(error);
+    // Non-blocking fallback for development/test mode
+    console.warn(
+      `[PUSH] Native push token registration bypassed (${Platform.OS}):`,
+      errorMsg
+    );
     return null;
   }
 }
 
+/**
+ * Synchronize the native push token with your backend database
+ */
 export async function syncPushTokenWithBackend(): Promise<string | null> {
-  const token = await registerForPushNotificationsAsync();
-  if (!token) {
+  try {
+    const token = await registerForPushNotificationsAsync();
+    if (!token) {
+      return null;
+    }
+
+    await apiClient.post(ENDPOINTS.AUTH.PUSH_TOKEN_SYNC, { fcmToken: token });
+    return token;
+  } catch (err: any) {
+    console.warn("[PUSH] Push token backend sync bypassed:", err?.message || err);
     return null;
   }
-
-  await apiClient.post(ENDPOINTS.AUTH.PUSH_TOKEN_SYNC, { fcmToken: token });
-  return token;
 }
 
 function asString(value: unknown): string | undefined {
@@ -174,17 +146,30 @@ function isTruthy(value: unknown): boolean {
   return value === true || value === "true" || value === "1" || value === 1;
 }
 
+/**
+ * Route user based on notification data payload (supports native FCM and APNs keys)
+ */
 export function navigateToNotificationSource(
   data?: Record<string, unknown> | null
 ) {
-  const sourceType = asString(data?.sourceType);
-  const birthdayGiftId = asString(data?.giftId);
-  if (birthdayGiftId || sourceType === "BIRTHDAY_GIFT" || sourceType === "BIRTHDAY") {
-    router.push({ pathname: "/screens/birthday-gift" as any, params: birthdayGiftId ? { giftId: birthdayGiftId } : undefined });
+  if (!data) {
+    router.push("/screens/notifications" as any);
     return;
   }
-  const couponId = asString(data?.couponId);
-  if (couponId) {
+
+  const sourceType = asString(data.sourceType || data.type);
+  const birthdayGiftId = asString(data.giftId || data.birthdayGiftId);
+
+  if (birthdayGiftId || sourceType === "BIRTHDAY_GIFT" || sourceType === "BIRTHDAY") {
+    router.push({
+      pathname: "/screens/birthday-gift" as any,
+      params: birthdayGiftId ? { giftId: birthdayGiftId } : undefined,
+    });
+    return;
+  }
+
+  const couponId = asString(data.couponId || data.dealId || data.id);
+  if (couponId && sourceType !== "MERCHANT" && sourceType !== "AREA") {
     router.push({
       pathname: "/screens/coupon-details" as any,
       params: { id: couponId },
@@ -192,9 +177,10 @@ export function navigateToNotificationSource(
     return;
   }
 
-  const merchantId = asString(data?.merchantId);
-  const areaId = asString(data?.areaId);
-  const grouped = isTruthy(data?.grouped);
+  const merchantId = asString(data.merchantId);
+  const areaId = asString(data.areaId);
+  const grouped = isTruthy(data.grouped);
+
   if (
     merchantId ||
     areaId ||
@@ -227,14 +213,14 @@ function handleNotificationResponse(response: Notifications.NotificationResponse
   if (key && key === lastHandledNotificationKey) return;
   lastHandledNotificationKey = key;
 
-  console.log("[PUSH] Notification tapped, data:", data);
+  console.log("[PUSH] Native notification tapped, payload:", data);
   InteractionManager.runAfterInteractions(() => {
     setTimeout(() => navigateToNotificationSource(data), 150);
   });
 }
 
 /**
- * Listen for incoming notifications (foreground) and taps (background / killed)
+ * Listen for incoming notifications (foreground) and taps (background / cold start)
  */
 export function setupNotificationListeners() {
   let isMounted = true;
@@ -243,12 +229,12 @@ export function setupNotificationListeners() {
     setupAndroidNotificationChannels().catch(() => {});
   }
 
-  // When a notification is received while app is in foreground
+  // 1. Foreground notification handler
   const receivedSubscription =
     Notifications.addNotificationReceivedListener((notification) => {
       const title = notification.request.content.title;
       const body = notification.request.content.body;
-      console.log("[PUSH] Notification received in foreground:", title, body);
+      console.log("[PUSH] Foreground notification received:", title, body);
 
       if (title || body) {
         toast.info(title || "New Notification", {
@@ -257,21 +243,28 @@ export function setupNotificationListeners() {
       }
     });
 
-  // When user taps on a notification
+  // 2. Background tap response handler
   const responseSubscription =
     Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
 
+  // 3. Cold start handler (app opened from killed state by notification tap)
   Notifications.getLastNotificationResponseAsync().then((response) => {
     if (response && isMounted) {
       setTimeout(() => {
         if (isMounted) handleNotificationResponse(response);
       }, 1000);
     }
+  }).catch((err) => {
+    console.warn("[PUSH] Cold-start check bypassed:", err?.message || err);
   });
 
   return () => {
     isMounted = false;
-    receivedSubscription.remove();
-    responseSubscription.remove();
+    try {
+      receivedSubscription.remove();
+      responseSubscription.remove();
+    } catch {
+      // safe cleanup
+    }
   };
 }

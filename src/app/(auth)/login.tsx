@@ -20,6 +20,7 @@ import PrimaryButton from "../../components/PrimaryButton";
 import LanguageBottomSheet, { LANGUAGES } from "../../components/LanguageBottomSheet";
 import { useAuthMutations } from "../../features/auth/hooks/useAuthMutations";
 import { initGoogleSignIn, signInWithGoogle } from "../../features/auth/utils/googleAuth";
+import { signInWithApple } from "../../features/auth/utils/appleAuth";
 import { useTranslation } from "react-i18next";
 import * as AppleAuthentication from "expo-apple-authentication";
 
@@ -116,30 +117,21 @@ export default function LoginScreen() {
   const handleAppleSignIn = async () => {
     if (isGoogleSigningIn) return;
     try {
-      if (!(await AppleAuthentication.isAvailableAsync())) {
-        toast.error("Apple Sign-In Unavailable", { description: "Apple Sign-In is available on iOS devices only." });
+      const result = await signInWithApple();
+
+      if (!result || result.cancelled) {
         return;
       }
 
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-      if (!credential.identityToken) throw new Error("Apple did not return an identity token.");
-
-      const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
-        .filter(Boolean)
-        .join(" ");
       appleLoginMutation.mutate({
-        identityToken: credential.identityToken,
-        email: credential.email || undefined,
-        fullName: fullName || undefined,
+        identityToken: result.identityToken,
+        email: result.email,
+        fullName: result.fullName,
       });
     } catch (error: any) {
-      if (error?.code === "ERR_REQUEST_CANCELED") return;
-      toast.error("Apple Sign-In Failed", { description: error?.message || "An error occurred during sign in." });
+      toast.error("Apple Sign-In", {
+        description: error?.message || "An error occurred during Apple Sign-In.",
+      });
     }
   };
 

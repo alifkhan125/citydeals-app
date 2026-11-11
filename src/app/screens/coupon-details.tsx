@@ -741,12 +741,15 @@ function ensureHttps(url?: string | null): string | null {
             </Text>
             <TextInput
               value={couponCodeInput}
-              onChangeText={setCouponCodeInput}
+              onChangeText={(text) =>
+                setCouponCodeInput(text.toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 10))
+              }
               placeholder="Enter coupon code"
               autoCapitalize="characters"
               autoCorrect={false}
+              maxLength={10}
               editable={!isRedeeming}
-              className="w-full h-12 border border-neutral-200 rounded-xl px-4 mt-5 text-neutral-900 font-semibold"
+              className="w-full h-12 border border-neutral-200 rounded-xl px-4 mt-5 text-neutral-900 font-semibold tracking-wider"
             />
             <View className="flex-row gap-3 mt-5">
               <TouchableOpacity

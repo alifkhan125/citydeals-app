@@ -20,7 +20,8 @@ export function ResponsiveContainer({
   edges = ["top", "left", "right", "bottom"],
   backgroundColor = "#ffffff",
 }: ResponsiveContainerProps) {
-  const { isTablet } = useResponsive();
+  const { isWide } = useResponsive();
+  const isTablet = isWide;
 
   return (
     <SafeAreaView

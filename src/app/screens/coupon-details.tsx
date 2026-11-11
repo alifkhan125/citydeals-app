@@ -21,6 +21,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../features/auth/store/useAuthStore";
 import { couponsApi } from "../../features/coupons/services/couponsApi";
 import { COUPONS_QUERY_KEY, SAVED_COUPONS_QUERY_KEY, REDEEMED_COUPONS_QUERY_KEY } from "../../features/coupons/hooks/useCoupons";
+import { useRedemptionCooldown } from "../../features/coupons/hooks/useRedemptionCooldown";
 import { Coupon } from "../../features/coupons/types";
 import {
   shareCouponWithSystemSheet,
@@ -115,16 +116,21 @@ export default function CouponDetailsScreen() {
       .catch(() => setShareBaseUrl(null));
   }, []);
 
-  useEffect(() => {
-    if (!redemptionAvailableAt) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [redemptionAvailableAt]);
+  const {
+    isCooldownActive: isRedemptionCooldownActive,
+    canRedeem: canRedeemNow,
+    secondsLeft: redemptionSecondsLeft,
+    formattedCountdown,
+  } = useRedemptionCooldown(
+    redemptionAvailableAt,
+    isRedeemed,
+    coupon?.redemptionFrequency || "ONE_TIME"
+  );
 
-  const availableAt = redemptionAvailableAt ? Date.parse(redemptionAvailableAt) : NaN;
-  const redemptionSecondsLeft = Number.isFinite(availableAt)
-    ? Math.max(0, Math.ceil((availableAt - now) / 1000))
-    : 0;
+  const canRedeemAgain = canRedeemNow;
+  const isPermanentlyRedeemed =
+    isRedeemed &&
+    coupon?.redemptionFrequency === "ONE_TIME";
 
   useEffect(() => {
     if (!activeCouponId) return;
@@ -171,22 +177,6 @@ export default function CouponDetailsScreen() {
     toast.success(msg);
   };
 
-  const isRedemptionCooldownActive = isRedeemed && redemptionSecondsLeft > 0;
-  const canRedeemAgain = isRedeemed && (
-    coupon?.redemptionFrequency === "UNLIMITED" ||
-    (Number.isFinite(availableAt) && redemptionSecondsLeft === 0)
-  );
-  const isPermanentlyRedeemed = isRedeemed && !redemptionAvailableAt && !canRedeemAgain;
-  const formatCountdown = (totalSeconds: number) => {
-    const days = Math.floor(totalSeconds / 86400);
-    const hours = Math.floor((totalSeconds % 86400) / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
-    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
-    return `${minutes}m ${seconds}s`;
-  };
-
   // Redeem button handler
   const handleRedeemPress = () => {
     if (isBlockedUser) {
@@ -202,7 +192,7 @@ export default function CouponDetailsScreen() {
     if (isRedeemed && !canRedeemAgain) {
       toast.error(
         isRedemptionCooldownActive
-          ? `This coupon is locked for ${formatCountdown(redemptionSecondsLeft)}.`
+          ? `This coupon is locked for ${formattedCountdown}.`
           : "This coupon has already been redeemed.",
       );
       return;
@@ -576,7 +566,7 @@ function ensureHttps(url?: string | null): string | null {
             <View className="mb-4 flex-row items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
               <Ionicons name="time-outline" size={18} color="#047857" />
               <Text className="ml-2 text-sm font-semibold text-emerald-700">
-                You can redeem this coupon again in {formatCountdown(redemptionSecondsLeft)}
+                You can redeem this coupon again in {formattedCountdown}
               </Text>
             </View>
           )}

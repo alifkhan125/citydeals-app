@@ -1,10 +1,11 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Image,
   ActivityIndicator,
+  InteractionManager,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -24,7 +25,20 @@ import * as AppleAuthentication from "expo-apple-authentication";
 export default function RegisterScreen() {
   const { t, i18n } = useTranslation();
   const { signupMutation, googleLoginMutation, appleLoginMutation } = useAuthMutations();
-  const isGoogleSigningIn = googleLoginMutation.isPending;
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const isGoogleSigningIn = isGoogleLoading || googleLoginMutation.isPending;
+
+  useEffect(() => {
+    // Configure Google Sign-In on mount
+    import('@react-native-google-signin/google-signin')
+      .then(({ GoogleSignin }) => {
+        GoogleSignin.configure({
+          webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+        });
+      })
+      .catch(() => {});
+  }, []);
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -55,23 +69,48 @@ export default function RegisterScreen() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (isGoogleSigningIn) return;
+    setIsGoogleLoading(true);
+
     try {
       const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
       GoogleSignin.configure({
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '', // You must provide this in .env
-        offlineAccess: true,
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
       });
 
-      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const userInfo = await GoogleSignin.signIn();
+
+      if (userInfo.type === 'cancelled') {
+        setIsGoogleLoading(false);
+        return;
+      }
+
       const idToken = userInfo.data?.idToken;
 
       if (idToken) {
-        googleLoginMutation.mutate(idToken);
+        InteractionManager.runAfterInteractions(() => {
+          googleLoginMutation.mutate(idToken, {
+            onSettled: () => setIsGoogleLoading(false),
+          });
+        });
       } else {
+        setIsGoogleLoading(false);
         toast.error("Google Sign-In Failed", { description: "Could not retrieve ID token." });
       }
     } catch (error: any) {
+      setIsGoogleLoading(false);
+      try {
+        const { statusCodes } = await import('@react-native-google-signin/google-signin');
+        if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
+          return;
+        }
+        if (error?.code === statusCodes.IN_PROGRESS) {
+          return;
+        }
+      } catch {
+        // ignore
+      }
       console.log('Google Sign-In Error:', error);
       toast.error("Google Sign-In Failed", { description: error.message || "An error occurred during sign in." });
     }

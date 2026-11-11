@@ -110,10 +110,15 @@ export async function registerForPushNotificationsAsync(): Promise<
           token = String(tokenData.data);
         }
       } catch (fcmError: any) {
+        const msg = fcmError?.message || String(fcmError);
         console.warn(
           "[PUSH] Native FCM token retrieval failed, attempting Expo push token fallback:",
-          fcmError?.message || fcmError
+          msg
         );
+        if (msg.includes("FIS_AUTH_ERROR")) {
+          isPushConfiguredOnDevice = false;
+          return null;
+        }
       }
 
       // If native FCM token wasn't retrieved, fall back to Expo push token
@@ -142,6 +147,9 @@ export async function registerForPushNotificationsAsync(): Promise<
   } catch (error: any) {
     const errorMessage = error?.message || String(error);
     console.warn("[PUSH] Failed to get push token:", errorMessage);
+    if (errorMessage.includes("FIS_AUTH_ERROR")) {
+      isPushConfiguredOnDevice = false;
+    }
     return null;
   }
 }

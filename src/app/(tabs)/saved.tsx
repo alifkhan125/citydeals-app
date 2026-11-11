@@ -19,11 +19,13 @@ import { useAuthStore } from "../../features/auth/store/useAuthStore";
 import { useSavedCoupons, useToggleSaveCoupon } from "../../features/coupons/hooks/useCoupons";
 import { toast } from "sonner-native";
 import { useTranslation } from "react-i18next";
+import { useResponsive } from "../../utils/useResponsive";
 
 export default function SavedScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
+  const { isWide, itemWidthPercent } = useResponsive();
 
   const {
     data: serverSavedCoupons = [],
@@ -158,14 +160,35 @@ export default function SavedScreen() {
             />
           </View>
         ) : savedDeals.length > 0 ? (
-          <View style={styles.feedContainer}>
+          <View
+            style={[
+              styles.feedContainer,
+              isWide && {
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 16,
+                justifyContent: "space-between",
+              },
+            ]}
+          >
             {savedDeals.map((deal) => (
-              <DealCard
+              <View
                 key={deal.id}
-                deal={deal}
-                onPressOpen={handleOpenDeal}
-                onToggleFavorite={handleToggleFavorite}
-              />
+                style={
+                  isWide
+                    ? {
+                        width: itemWidthPercent,
+                        flexGrow: 1,
+                      }
+                    : { width: "100%" }
+                }
+              >
+                <DealCard
+                  deal={deal}
+                  onPressOpen={handleOpenDeal}
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              </View>
             ))}
           </View>
         ) : (

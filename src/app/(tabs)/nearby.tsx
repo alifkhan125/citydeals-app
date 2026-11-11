@@ -21,6 +21,7 @@ import { useCoupons, useSavedCoupons, useToggleSaveCoupon } from "../../features
 import { useAuthStore } from "../../features/auth/store/useAuthStore";
 import { useUserLocation } from "../../features/location/hooks/useUserLocation";
 import { useTranslation } from "react-i18next";
+import { useResponsive } from "../../utils/useResponsive";
 
 interface ProcessedNearbyDeal extends DealItem {
   distanceKm: number | null;
@@ -59,6 +60,7 @@ export default function NearbyScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
+  const { isWide, itemWidthPercent } = useResponsive();
 
   const {
     coords,
@@ -409,15 +411,39 @@ export default function NearbyScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            /* Render deals list */
-            filteredDeals.map((deal) => (
-              <DealCard
-                key={deal.id}
-                deal={deal}
-                onPressOpen={handleOpenDeal}
-                onToggleFavorite={handleToggleFavorite}
-              />
-            ))
+            /* Render deals list in responsive fluid grid */
+            <View
+              style={
+                isWide
+                  ? {
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      gap: 16,
+                      justifyContent: "space-between",
+                    }
+                  : undefined
+              }
+            >
+              {filteredDeals.map((deal) => (
+                <View
+                  key={deal.id}
+                  style={
+                    isWide
+                      ? {
+                          width: itemWidthPercent,
+                          flexGrow: 1,
+                        }
+                      : { width: "100%" }
+                  }
+                >
+                  <DealCard
+                    deal={deal}
+                    onPressOpen={handleOpenDeal}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
+                </View>
+              ))}
+            </View>
           )}
         </View>
       </ScrollView>

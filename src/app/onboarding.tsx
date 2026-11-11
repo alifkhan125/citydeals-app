@@ -21,7 +21,7 @@ import { useResponsive } from "../utils/useResponsive";
 export default function OnboardingScreen() {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
-  const { isTablet, scale } = useResponsive();
+  const { isWide, scale } = useResponsive();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
 
@@ -83,8 +83,8 @@ export default function OnboardingScreen() {
 
       {/* Top Header with CityDeals logo / Skip Button */}
       <View
-        style={{ maxWidth: 640, width: "100%", alignSelf: "center" }}
-        className="flex-row justify-between items-center px-6 pt-2 h-16"
+        style={{ width: "100%", paddingHorizontal: isWide ? "8%" : 24 }}
+        className="flex-row justify-between items-center pt-2 h-16"
       >
         <Image
           source={require("../../assets/images/city-deals-logo.png")}
@@ -122,28 +122,28 @@ export default function OnboardingScreen() {
               style={{ width: slideWidth }}
               className="flex-1 items-center justify-center px-6"
             >
-              <View style={{ maxWidth: 540, width: "100%", alignItems: "center" }}>
+              <View style={{ width: isWide ? "70%" : "100%", alignItems: "center" }}>
                 {/* Image Illustration with Soft Ambient Glow */}
                 <View className="items-center justify-center relative my-4 w-full">
                   <View
                     style={{
-                      width: isTablet ? 340 : 256,
-                      height: isTablet ? 340 : 256,
+                      width: isWide ? 320 : 256,
+                      height: isWide ? 320 : 256,
                     }}
                     className="absolute rounded-full bg-orange-100/60 blur-2xl"
                   />
                   <Image
                     source={item.image}
                     style={{
-                      width: isTablet ? 360 : 288,
-                      height: isTablet ? 320 : 256,
+                      width: isWide ? 340 : 288,
+                      height: isWide ? 300 : 256,
                     }}
                     resizeMode="contain"
                   />
                 </View>
 
                 {/* Content Details */}
-                <View className="items-center mt-6 max-w-lg px-2">
+                <View className="items-center mt-6 w-full px-2">
                   <View className="bg-orange-50 border border-orange-200/60 px-5 py-2 rounded-full mb-4">
                     <Text
                       style={{ fontSize: scale(14) }}
@@ -175,7 +175,7 @@ export default function OnboardingScreen() {
 
       {/* Bottom Controls (Pagination Dots + Action Button) */}
       <View
-        style={{ maxWidth: 540, width: "100%", alignSelf: "center" }}
+        style={{ width: isWide ? "60%" : "100%", alignSelf: "center" }}
         className="px-6 pb-6 pt-2"
       >
         {/* Pagination Dots */}

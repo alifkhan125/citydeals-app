@@ -60,7 +60,6 @@ export default function DealCard({
         shadowOpacity: 0.12,
         shadowRadius: 12,
         elevation: 4,
-        maxWidth: 580,
         width: "100%",
         alignSelf: "center",
       }}

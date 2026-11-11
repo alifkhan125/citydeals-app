@@ -33,6 +33,7 @@ import { useDebounce } from "../../utils/useDebounce";
 import { useShallow } from "zustand/react/shallow";
 import { toast } from "sonner-native";
 import { useTranslation } from "react-i18next";
+import { useResponsive } from "../../utils/useResponsive";
 
 // Cast to any to bypass AnimatedProps typing bug with FlashListProps
 const AnimatedFlashList = OriginalAnimatedFlashList as any;
@@ -75,6 +76,7 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { isWide, numColumns } = useResponsive();
   const [selectedCategorySlug, setSelectedCategorySlug] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery.trim(), 350);
@@ -449,7 +451,9 @@ export default function HomeScreen() {
 
       {/* Scrollable Content using FlashList for 60fps */}
       <AnimatedFlashList
+        key={`home-deals-grid-${numColumns}`}
         data={filteredDeals}
+        numColumns={numColumns}
         estimatedItemSize={400}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -466,7 +470,7 @@ export default function HomeScreen() {
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false },
         )}
-        contentContainerStyle={{ paddingTop: 16, paddingBottom: 110 }}
+        contentContainerStyle={{ paddingTop: 16, paddingBottom: 110, paddingHorizontal: isWide ? 8 : 0 }}
         ListHeaderComponent={
           <View className="mb-4">
             <View className="flex-row items-center justify-between px-5 mb-3">
@@ -519,7 +523,7 @@ export default function HomeScreen() {
           </View>
         }
         renderItem={({ item }: { item: DealItem }) => (
-          <View className="px-4">
+          <View style={{ flex: 1, paddingHorizontal: isWide ? 8 : 16 }}>
             <DealCard
               deal={item}
               onPressOpen={handleOpenDeal}

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "533561758566",
+    "project_id": "citydeals-app",
+    "storage_bucket": "citydeals-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533561758566:android:289a226a862430fab1aea7",
+        "android_client_info": {
+          "package_name": "com.citydeals.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "533561758566-56su6o6ikdph866up5hr24h43u52ndof.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.citydeals.app",
+            "certificate_hash": "a3cd1444bb7e35cd67bc7e26c5d34af7c4075a81"
+          }
+        },
+        {
+          "client_id": "533561758566-3afkcc8sf2mhooglmk1i06rb1ogf6sdb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCT4YaBeraZxf3ZVuYCZOEn9tTSKhuKHg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "533561758566-3afkcc8sf2mhooglmk1i06rb1ogf6sdb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

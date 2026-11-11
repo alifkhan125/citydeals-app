@@ -33,6 +33,7 @@ yarn-error.*
 # local env files
 .env
 .env*.local
+*firebase-adminsdk*.json
 
 # typescript
 *.tsbuildinfo
@@ -43,4 +44,3 @@ example
 /ios
 /android
 config.bat
-google-services.json

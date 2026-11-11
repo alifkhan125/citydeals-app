@@ -8,6 +8,7 @@
     "scheme": "citydeals",
     "userInterfaceStyle": "light",
     "ios": {
+      "supportsTablet": true,
       "bundleIdentifier": "com.citydeals.app",
       "buildNumber": "1",
       "icon": "./assets/images/icon.png",

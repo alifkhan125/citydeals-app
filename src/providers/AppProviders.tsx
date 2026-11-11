@@ -78,8 +78,8 @@ interface AppProvidersProps {
 
 export default function AppProviders({ children }: AppProvidersProps) {
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#ffffff" }}>
-      <SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1, width: "100%", height: "100%", backgroundColor: "#ffffff" }}>
+      <SafeAreaProvider style={{ flex: 1, width: "100%", height: "100%" }}>
         <I18nextProvider i18n={i18n}>
           <QueryClientProvider client={queryClient}>
             <AuthInitializer />

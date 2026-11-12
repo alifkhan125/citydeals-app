@@ -84,12 +84,19 @@ export const useAuthMutations = () => {
 
   const signupMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (data) => {
-      handleSuccess(data, "/(tabs)");
-      toast.success("Account Created", { description: "Welcome to CityDeals!" });
-    },
     onError: (error) => {
       toast.error("Signup Failed", { description: handleApiError(error) });
+    },
+  });
+
+  const verifyRegisterOtpMutation = useMutation({
+    mutationFn: authApi.verifyRegisterOtp,
+    onSuccess: (data) => {
+      handleSuccess(data, "/(tabs)");
+      toast.success("Account Verified", { description: "Welcome to CityDeals!" });
+    },
+    onError: (error) => {
+      toast.error("Verification Failed", { description: handleApiError(error) });
     },
   });
 
@@ -116,6 +123,7 @@ export const useAuthMutations = () => {
     appleLoginMutation,
     adminLoginMutation,
     signupMutation,
+    verifyRegisterOtpMutation,
     logoutMutation,
   };
 };

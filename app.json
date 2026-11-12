@@ -17,14 +17,9 @@
       "buildNumber": "1",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        },
         "UIBackgroundModes": [
-          "location",
           "remote-notification"
         ],
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow CityDeals to alert you about nearby deals even when the app is in the background.",
         "NSLocationWhenInUseUsageDescription": "Allow CityDeals to access your location to show local deals near you.",
         "NSPhotoLibraryUsageDescription": "Allow CityDeals to access your photo library so you can update your profile picture."
       }
@@ -41,7 +36,6 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
         "POST_NOTIFICATIONS"
       ],
       "intentFilters": [
@@ -78,7 +72,7 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow CityDeals to access your location to show local deals near you.",
-          "isAndroidBackgroundLocationEnabled": true
+          "isAndroidBackgroundLocationEnabled": false
         }
       ],
       "@react-native-community/datetimepicker",
@@ -97,8 +91,7 @@
         }
       ],
       "@react-native-google-signin/google-signin",
-      "expo-apple-authentication",
-      "./plugins/with-http-api"
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true

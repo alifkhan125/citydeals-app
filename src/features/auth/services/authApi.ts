@@ -28,8 +28,13 @@ export const authApi = {
     return data?.data || data;
   },
 
-  register: async (credentials: any): Promise<AuthResponse> => {
+  register: async (credentials: any): Promise<any> => {
     const { data } = await apiClient.post<any>(ENDPOINTS.AUTH.REGISTER, credentials);
+    return data?.data || data;
+  },
+
+  verifyRegisterOtp: async (payload: { email: string; otp: string }): Promise<AuthResponse> => {
+    const { data } = await apiClient.post<any>(ENDPOINTS.AUTH.VERIFY_REGISTER_OTP, payload);
     return data?.data || data;
   },
 

@@ -6,6 +6,7 @@ import {
   Image,
   ActivityIndicator,
   InteractionManager,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -26,7 +27,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 
 export default function RegisterScreen() {
   const { t, i18n } = useTranslation();
-  const { signupMutation, googleLoginMutation, appleLoginMutation } = useAuthMutations();
+  const { signupMutation, verifyRegisterOtpMutation, googleLoginMutation, appleLoginMutation } = useAuthMutations();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const isGoogleSigningIn = isGoogleLoading || googleLoginMutation.isPending;
 
@@ -45,6 +46,11 @@ export default function RegisterScreen() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLanguageSheetOpen, setIsLanguageSheetOpen] = useState(false);
 
+  // OTP Verification Step State
+  const [step, setStep] = useState<"form" | "otp">("form");
+  const [otpCode, setOtpCode] = useState("");
+  const [resending, setResending] = useState(false);
+
   const currentLang = useMemo(() => {
     const code = (i18n.language || "en").slice(0, 2);
     return LANGUAGES.find((l) => l.id === code) || LANGUAGES[0];
@@ -60,7 +66,50 @@ export default function RegisterScreen() {
       return;
     }
     if (!fullName || !email || !password) return;
-    signupMutation.mutate({ fullName, email, password, phoneNumber: phone, acceptedTerms: agreeTerms });
+
+    signupMutation.mutate(
+      { fullName, email: email.trim(), password, phoneNumber: phone, acceptedTerms: agreeTerms },
+      {
+        onSuccess: (data: any) => {
+          toast.success("Verification Code Sent", {
+            description: `A 6-digit OTP code has been sent to ${email.trim()}`,
+          });
+          if (data?.otp) {
+            toast.info("Dev OTP", { description: `Your code is: ${data.otp}` });
+          }
+          setStep("otp");
+        },
+      }
+    );
+  };
+
+  const handleVerifyOtp = () => {
+    if (otpCode.trim().length !== 6) {
+      toast.error("Invalid Code", { description: "Please enter the 6-digit code sent to your email." });
+      return;
+    }
+    verifyRegisterOtpMutation.mutate({
+      email: email.trim(),
+      otp: otpCode.trim(),
+    });
+  };
+
+  const handleResendOtp = () => {
+    if (resending || !email.trim()) return;
+    setResending(true);
+    signupMutation.mutate(
+      { fullName, email: email.trim(), password, phoneNumber: phone, acceptedTerms: agreeTerms },
+      {
+        onSuccess: (data: any) => {
+          setResending(false);
+          toast.success("Code Resent", { description: `New verification code sent to ${email.trim()}` });
+          if (data?.otp) {
+            toast.info("Dev OTP", { description: `Your code is: ${data.otp}` });
+          }
+        },
+        onError: () => setResending(false),
+      }
+    );
   };
 
   const handleGoogleSignIn = async () => {
@@ -118,21 +167,21 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#ffffff" }}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
-            justifyContent: "center",
+            paddingBottom: 40,
             paddingHorizontal: 24,
-            paddingVertical: 24,
+            paddingTop: 12,
           }}
-          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <View style={{ maxWidth: 460, width: "100%", alignSelf: "center", opacity: isGoogleSigningIn ? 0.55 : 1 }}>
             {/* Top Bar with Language Selector */}
@@ -164,15 +213,79 @@ export default function RegisterScreen() {
           {/* Heading */}
           <View className="items-center mb-4">
             <Text className="text-lg font-bold text-neutral-900 tracking-tight">
-              {t("auth.register_title")}
+              {step === "otp" ? "Verify Your Email" : t("auth.register_title")}
             </Text>
             <Text className="text-neutral-500 text-base text-center mt-1 max-w-xs">
-              {t("auth.register_subtitle")}
+              {step === "otp"
+                ? `Enter the 6-digit verification code sent to ${email}`
+                : t("auth.register_subtitle")}
             </Text>
           </View>
 
-          {/* Form Fields */}
-          <View className="gap-y-3">
+          {step === "otp" ? (
+            /* OTP Verification Screen */
+            <View className="gap-y-4">
+              <View className="items-center bg-orange-50 border border-orange-200 rounded-xl p-4 mb-2">
+                <Feather name="mail" size={32} color="#ea580c" />
+                <Text className="text-orange-950 font-semibold text-sm mt-2 text-center">
+                  Check your inbox for the code
+                </Text>
+                <Text className="text-orange-800 text-xs text-center mt-0.5">
+                  The code is valid for 10 minutes.
+                </Text>
+              </View>
+
+              <View>
+                <Text className="text-neutral-700 text-base font-semibold mb-1 text-center">
+                  Verification Code
+                </Text>
+                <View className="flex-row items-center border border-neutral-200 rounded-xl px-3.5 h-14 bg-white focus:border-orange-500">
+                  <TextInput
+                    value={otpCode}
+                    onChangeText={(val) => setOtpCode(val.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    placeholderTextColor="#9ca3af"
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    className="flex-1 text-center font-bold tracking-widest text-2xl text-neutral-900 py-0"
+                  />
+                </View>
+              </View>
+
+              <PrimaryButton
+                title="Verify & Create Account"
+                onPress={handleVerifyOtp}
+                loading={verifyRegisterOtpMutation.isPending}
+                disabled={otpCode.length !== 6}
+                className="mt-2"
+              />
+
+              <View className="flex-row justify-between items-center px-1 mt-2">
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setStep("form")}
+                  className="py-2"
+                >
+                  <Text className="text-neutral-500 text-sm font-medium">
+                    ← Edit Details
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  disabled={resending}
+                  activeOpacity={0.7}
+                  onPress={handleResendOtp}
+                  className="py-2"
+                >
+                  <Text className="text-orange-600 font-semibold text-sm">
+                    {resending ? "Sending..." : "Resend Code"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            /* Registration Form Fields */
+            <View className="gap-y-3">
             {/* Full Name */}
             <View>
               <Text className="text-neutral-700 text-base font-semibold mb-1">
@@ -390,6 +503,7 @@ export default function RegisterScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+          )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

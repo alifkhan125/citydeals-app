@@ -214,28 +214,31 @@ export const startBackgroundLocationTracking = async () => {
       return;
     }
 
-    // Request background permission if possible
-    let backgroundStatus: string = 'undetermined';
+    // Check if background location tracking is supported and available natively
+    try {
+      const isAvailable = await Location.isBackgroundLocationAvailableAsync();
+      if (!isAvailable) {
+        return;
+      }
+    } catch {
+      return;
+    }
+
+    // Background tracking strictly requires background permission in manifest and user grant
+    let backgroundGranted = false;
     try {
       const bgPerm = await Location.getBackgroundPermissionsAsync();
-      backgroundStatus = bgPerm.status;
-      if (backgroundStatus !== 'granted' && bgPerm.canAskAgain) {
-        try {
-          const res = await Location.requestBackgroundPermissionsAsync();
-          backgroundStatus = res.status;
-        } catch {
-          // ignore
-        }
+      if (bgPerm.status === 'granted') {
+        backgroundGranted = true;
+      } else if (bgPerm.canAskAgain) {
+        const res = await Location.requestBackgroundPermissionsAsync().catch(() => null);
+        backgroundGranted = res?.status === 'granted';
       }
     } catch (permError) {
       console.warn('[Location] Background permission query not available:', permError);
     }
 
-    // On Android, foregroundService runs with foreground permission OR background permission.
-    // On iOS, background permission is required.
-    const canRun = Platform.OS === 'android' ? true : backgroundStatus === 'granted';
-    if (!canRun) {
-      console.warn('[Location] Background permission required on iOS for background tracking');
+    if (!backgroundGranted) {
       return;
     }
 
@@ -259,7 +262,7 @@ export const startBackgroundLocationTracking = async () => {
       console.log('[Location] Started background location tracking successfully');
     }
   } catch (error) {
-    console.error('[Location] Failed to start background tracking:', error);
+    console.warn('[Location] Background tracking not started:', error);
   }
   })();
 

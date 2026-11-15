@@ -23,12 +23,12 @@ const googlePackage =
 const checks = [
   {
     label: "Android package is production package",
-    ok: androidPackage === "com.citydeals.app",
+    ok: androidPackage === "ai.citydeals.app",
     detail: androidPackage,
   },
   {
     label: "iOS bundle identifier is production identifier",
-    ok: iosBundleId === "com.citydeals.app",
+    ok: iosBundleId === "ai.citydeals.app",
     detail: iosBundleId,
   },
   {

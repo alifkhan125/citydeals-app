@@ -9,7 +9,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.citydeals.app",
+      "bundleIdentifier": "ai.citydeals.app",
       "googleServicesFile": "./GoogleService-Info.plist",
       "entitlements": {
         "aps-environment": "production"
@@ -30,7 +30,7 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.citydeals.app",
+      "package": "ai.citydeals.app",
       "versionCode": 1,
       "googleServicesFile": "./google-services.json",
       "permissions": [

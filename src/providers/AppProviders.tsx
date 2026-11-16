@@ -44,17 +44,31 @@ function NotificationInitializer() {
     };
   }, []);
 
-  // When user is authenticated, sync token with backend
+  // When user is authenticated, sync token with backend and re-check on AppState active
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    import("../features/notifications/services/pushNotificationService").then(
-      ({ syncPushTokenWithBackend }) => {
-        syncPushTokenWithBackend().catch((error) => {
-          console.warn("[PUSH] Failed to sync push token:", error);
-        });
+    const doSync = () => {
+      import("../features/notifications/services/pushNotificationService").then(
+        ({ syncPushTokenWithBackend }) => {
+          syncPushTokenWithBackend().catch((error) => {
+            console.warn("[PUSH] Failed to sync push token:", error);
+          });
+        }
+      );
+    };
+
+    doSync();
+
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        doSync();
       }
-    );
+    });
+
+    return () => {
+      sub.remove();
+    };
   }, [isAuthenticated]);
 
   return null;

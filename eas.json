@@ -6,7 +6,7 @@
   "build": {
     "development": {
       "env": {
-        "EXPO_PUBLIC_BASE_URL": "https://playappllc.com/citydeals/api",
+        "EXPO_PUBLIC_BASE_URL": "https://api.citydeals.ai/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "533561758566-3afkcc8sf2mhooglmk1i06rb1ogf6sdb.apps.googleusercontent.com"
       },
       "developmentClient": true,
@@ -14,7 +14,7 @@
     },
     "preview": {
       "env": {
-        "EXPO_PUBLIC_BASE_URL": "https://playappllc.com/citydeals/api",
+        "EXPO_PUBLIC_BASE_URL": "https://api.citydeals.ai/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "533561758566-3afkcc8sf2mhooglmk1i06rb1ogf6sdb.apps.googleusercontent.com"
       },
       "distribution": "internal",

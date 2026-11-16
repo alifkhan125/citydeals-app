@@ -28,11 +28,15 @@ function AuthInitializer() {
 function NotificationInitializer() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
+  // App Launch: Set up listeners & fetch/print native APNs/FCM tokens for manual testing
   useEffect(() => {
     let cleanupFn: (() => void) | undefined;
     import("../features/notifications/services/pushNotificationService").then(
-      ({ setupNotificationListeners }) => {
+      ({ setupNotificationListeners, registerForPushNotificationsAsync }) => {
         cleanupFn = setupNotificationListeners();
+        registerForPushNotificationsAsync().catch((error) => {
+          console.warn("[PUSH] App launch token registration bypassed:", error);
+        });
       }
     );
     return () => {
@@ -40,6 +44,7 @@ function NotificationInitializer() {
     };
   }, []);
 
+  // When user is authenticated, sync token with backend
   useEffect(() => {
     if (!isAuthenticated) return;
 

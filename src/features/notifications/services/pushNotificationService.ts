@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiClient } from "../../../api/client";
 import { ENDPOINTS } from "../../../api/endpoints";
 import { toast } from "sonner-native";
@@ -16,9 +17,96 @@ Notifications.setNotificationHandler({
   }),
 });
 
+export interface PushTokensInfo {
+  deviceToken: string | null;
+  deviceTokenType: "apns" | "fcm" | string | null;
+  expoPushToken: string | null;
+  status: string;
+  platform: string;
+  isDevice: boolean;
+}
+
+let cachedPushTokensInfo: PushTokensInfo = {
+  deviceToken: null,
+  deviceTokenType: null,
+  expoPushToken: null,
+  status: "undetermined",
+  platform: Platform.OS,
+  isDevice: Boolean(Device.isDevice),
+};
+
 let cachedPushToken: string | null = null;
 let lastHandledNotificationKey: string | null = null;
-let isPushWarningLogged = false;
+let isBannerLogged = false;
+
+export function getCachedPushTokensInfo(): PushTokensInfo {
+  return cachedPushTokensInfo;
+}
+
+function printPushTokensBanner(info: PushTokensInfo) {
+  const isIos = Platform.OS === "ios";
+  const isAndroid = Platform.OS === "android";
+
+  console.log("\n" + "=".repeat(78));
+  console.log("📱 [PUSH NOTIFICATION TOKENS - MANUAL TESTING]");
+  console.log("=".repeat(78));
+  console.log(`Platform     : ${info.platform.toUpperCase()}`);
+  console.log(
+    `Device       : ${
+      info.isDevice ? "Physical Device" : "Simulator / Emulator"
+    }`
+  );
+  console.log(`Permission   : ${info.status.toUpperCase()}`);
+  console.log("-".repeat(78));
+
+  if (isAndroid && info.deviceToken) {
+    console.log("🔥 Firebase FCM Registration Token (for Firebase Dashboard / Console):");
+    console.log(info.deviceToken);
+    console.log("-".repeat(78));
+  } else if (isIos && info.deviceToken) {
+    console.log("🍏 iOS APNs Native Device Token:");
+    console.log(info.deviceToken);
+    console.log("-".repeat(78));
+  } else if (!info.deviceToken) {
+    const label = isIos ? "iOS APNs Device Token" : "Android FCM Registration Token";
+    console.log(`⚠️ Native ${label}: NOT AVAILABLE`);
+    if (!info.isDevice) {
+      console.log(
+        "   👉 Reason: Native APNs tokens require a physical iOS device."
+      );
+    } else if (info.status !== "granted") {
+      console.log(
+        "   👉 Reason: Notification permission was not granted by the user."
+      );
+    }
+    console.log("-".repeat(78));
+  }
+
+  if (info.expoPushToken) {
+    console.log("🚀 Expo Push Token (Universal Web & API Tester):");
+    console.log(info.expoPushToken);
+    console.log("-".repeat(78));
+  }
+
+  console.log("🔥 HOW TO TEST MANUALLY ON FIREBASE DASHBOARD / CONSOLE:");
+  if (isAndroid && info.deviceToken) {
+    console.log("1. Go to Firebase Console > Engage > Messaging > 'New campaign' (or 'Send your first message')");
+    console.log("2. Click 'Send test message' / 'Test on device'");
+    console.log("3. Paste the Firebase FCM Registration Token above and click 'Test'.");
+  } else if (isIos) {
+    console.log("ℹ️  Firebase Console 'Test on device' requires an FCM token.");
+    console.log("   • On iOS, expo-notifications uses Apple's native APNs directly (the APNs token above).");
+    console.log("   • To test notifications on iOS manually:");
+    console.log("     A) Expo Web Tool (Easiest & Instant):");
+    console.log("        Visit https://expo.dev/notifications, paste the Expo Push Token above, and click 'Send'.");
+    console.log("     B) Native APNs / Push Tools:");
+    console.log("        Use macOS 'PushNotification' or Pusher app with the APNs token above and bundle ID 'ai.citydeals.app'.");
+    console.log("     C) Firebase Backend / Server API:");
+    console.log("        Ensure your APNs Key (.p8) is uploaded in Firebase Project Settings > Cloud Messaging > Apple app configuration.");
+    console.log("        Your backend / Firebase Admin SDK can then dispatch push alerts directly to this device.");
+  }
+  console.log("=".repeat(78) + "\n");
+}
 
 export async function setupAndroidNotificationChannels() {
   if (Platform.OS !== "android") return;
@@ -46,28 +134,21 @@ export async function setupAndroidNotificationChannels() {
 }
 
 /**
- * Register for native push notifications and return the direct native device push token:
- * - Android: Native FCM registration token
- * - iOS: Native APNs device push token
- *
- * Graceful Fallback / Test Mode:
- * - If running in iOS Simulator or Android emulator, logs a safe informational message without throwing or breaking runtime.
- * - If push credentials / entitlements are pending, returns null cleanly.
+ * Register for native push notifications on app launch:
+ * - Prompts for notification permissions if not already decided.
+ * - Resolves the native iOS APNs token (or Android FCM token).
+ * - Resolves the Expo Push Token.
+ * - Prints copy-pasteable tokens in the console for manual testing.
  */
-export async function registerForPushNotificationsAsync(): Promise<string | null> {
-  if (cachedPushToken) {
-    return cachedPushToken;
-  }
-
-  // Push notifications require a physical device on iOS and Android
-  if (!Device.isDevice) {
-    if (!isPushWarningLogged) {
-      console.log(
-        `[PUSH] Running on ${Platform.OS} simulator/emulator. Push token registration runs in test mode (no physical APNs/FCM available).`
-      );
-      isPushWarningLogged = true;
+export async function registerForPushNotificationsAsync(options?: {
+  forceRefresh?: boolean;
+}): Promise<string | null> {
+  if (cachedPushToken && !options?.forceRefresh) {
+    if (!isBannerLogged) {
+      printPushTokensBanner(cachedPushTokensInfo);
+      isBannerLogged = true;
     }
-    return null;
+    return cachedPushToken;
   }
 
   try {
@@ -86,8 +167,14 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       finalStatus = status;
     }
 
+    cachedPushTokensInfo.status = finalStatus;
+
     if (finalStatus !== "granted") {
-      console.log("[PUSH] Notification permissions were not granted by the user.");
+      console.log(
+        `[PUSH] Notification permission status: ${finalStatus}. Notifications disabled by user.`
+      );
+      printPushTokensBanner(cachedPushTokensInfo);
+      isBannerLogged = true;
       return null;
     }
 
@@ -95,41 +182,93 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       await setupAndroidNotificationChannels();
     }
 
-    // Attempt native token resolution: APNs on iOS, FCM on Android
-    let token: string | null = null;
+    // 1. Resolve Native Device Push Token (APNs on iOS, FCM on Android)
+    let deviceToken: string | null = null;
+    let deviceTokenType: string | null = Platform.OS === "ios" ? "apns" : "fcm";
+
     try {
       const tokenData = await Notifications.getDevicePushTokenAsync();
-      token = tokenData?.data ? String(tokenData.data) : null;
+      if (tokenData?.data) {
+        deviceToken = String(tokenData.data);
+        if (tokenData.type) {
+          deviceTokenType =
+            tokenData.type === "ios" ? "apns" : String(tokenData.type);
+        }
+      }
     } catch (deviceTokenErr: any) {
-      console.warn(`[PUSH] getDevicePushTokenAsync failed on ${Platform.OS}:`, deviceTokenErr?.message);
-    }
-
-    // Fallback: If device token failed or in Expo dev/simulator, try getExpoPushTokenAsync
-    if (!token) {
-      try {
-        const expoTokenData = await Notifications.getExpoPushTokenAsync();
-        token = expoTokenData?.data ? String(expoTokenData.data) : null;
-      } catch (expoTokenErr: any) {
-        console.warn("[PUSH] getExpoPushTokenAsync fallback also bypassed:", expoTokenErr?.message);
+      if (Device.isDevice) {
+        console.warn(
+          `[PUSH] getDevicePushTokenAsync failed on ${Platform.OS}:`,
+          deviceTokenErr?.message || deviceTokenErr
+        );
       }
     }
 
-    if (token) {
-      console.log(`[PUSH] Plug-and-play active: native ${Platform.OS.toUpperCase()} push token resolved:`, token);
-      cachedPushToken = token;
-      return token;
+    // 2. Resolve Expo Push Token (fallback / testing web tool)
+    let expoPushToken: string | null = null;
+    try {
+      const expoTokenData = await Notifications.getExpoPushTokenAsync();
+      if (expoTokenData?.data) {
+        expoPushToken = String(expoTokenData.data);
+      }
+    } catch (expoTokenErr: any) {
+      // Ignored if EAS projectId is not configured in app.json
     }
 
-    console.warn(`[PUSH] Device token could not be resolved on ${Platform.OS}.`);
-    return null;
+    const primaryToken = deviceToken || expoPushToken;
+
+    cachedPushTokensInfo = {
+      deviceToken,
+      deviceTokenType,
+      expoPushToken,
+      status: finalStatus,
+      platform: Platform.OS,
+      isDevice: Boolean(Device.isDevice),
+    };
+
+    if (primaryToken) {
+      cachedPushToken = primaryToken;
+      AsyncStorage.setItem(
+        "citydeals_push_token_info",
+        JSON.stringify(cachedPushTokensInfo)
+      ).catch(() => {});
+    }
+
+    printPushTokensBanner(cachedPushTokensInfo);
+    isBannerLogged = true;
+
+    return primaryToken;
   } catch (error: any) {
     const errorMsg = error?.message || String(error);
-    // Non-blocking fallback for development/test mode
     console.warn(
       `[PUSH] Native push token registration bypassed (${Platform.OS}):`,
       errorMsg
     );
     return null;
+  }
+}
+
+/**
+ * Send an immediate local test notification (useful for verifying banners, sounds, and UI)
+ */
+export async function sendLocalTestNotification(
+  title: string = "CityDeals Push Test",
+  body: string = "Your push notification system is working perfectly!"
+) {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        sound: true,
+        data: { test: true, timestamp: Date.now() },
+      },
+      trigger: null, // deliver immediately
+    });
+    return true;
+  } catch (err: any) {
+    console.warn("[PUSH] sendLocalTestNotification failed:", err?.message || err);
+    return false;
   }
 }
 
@@ -143,7 +282,10 @@ export async function syncPushTokenWithBackend(): Promise<string | null> {
       return null;
     }
 
-    await apiClient.post(ENDPOINTS.AUTH.PUSH_TOKEN_SYNC, { fcmToken: token });
+    const response = await apiClient.post(ENDPOINTS.AUTH.PUSH_TOKEN_SYNC, { fcmToken: token });
+    if (response?.data) {
+      console.log("[PUSH] Backend push token sync successful:", response.data);
+    }
     return token;
   } catch (err: any) {
     console.warn("[PUSH] Push token backend sync bypassed:", err?.message || err);

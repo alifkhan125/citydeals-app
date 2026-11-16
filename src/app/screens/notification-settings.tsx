@@ -1,9 +1,10 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
+  Platform,
   ScrollView,
   Switch,
   Text,
@@ -12,12 +13,19 @@ import {
   View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Clipboard from "expo-clipboard";
 import { toast } from "sonner-native";
 import CurvedHeader from "../../components/CurvedHeader";
 import { useAuthStore } from "../../features/auth/store/useAuthStore";
 import { useCurrentUser } from "../../features/auth/hooks/useCurrentUser";
 import { useUpdateNotificationSettings } from "../../features/notifications/hooks/useNotifications";
-import { syncPushTokenWithBackend } from "../../features/notifications/services/pushNotificationService";
+import {
+  syncPushTokenWithBackend,
+  registerForPushNotificationsAsync,
+  getCachedPushTokensInfo,
+  sendLocalTestNotification,
+  PushTokensInfo,
+} from "../../features/notifications/services/pushNotificationService";
 
 const RADIUS_PRESETS = [
   {
@@ -71,6 +79,44 @@ export default function NotificationSettingsScreen() {
   const updateSettings = useUpdateNotificationSettings();
   const [customRadius, setCustomRadius] = useState("2");
   const [customUnit, setCustomUnit] = useState<"m" | "km">("km");
+  const [tokenInfo, setTokenInfo] = useState<PushTokensInfo>(getCachedPushTokensInfo());
+  const [isRefreshingToken, setIsRefreshingToken] = useState(false);
+
+  useEffect(() => {
+    setTokenInfo(getCachedPushTokensInfo());
+  }, []);
+
+  const handleRefreshToken = async () => {
+    setIsRefreshingToken(true);
+    try {
+      await registerForPushNotificationsAsync({ forceRefresh: true });
+      const updated = getCachedPushTokensInfo();
+      setTokenInfo(updated);
+      toast.success("Push tokens refreshed & logged to console");
+    } catch {
+      toast.error("Failed to refresh push tokens");
+    } finally {
+      setIsRefreshingToken(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string | null, label: string) => {
+    if (!text) {
+      toast.error(`No ${label} available to copy`);
+      return;
+    }
+    await Clipboard.setStringAsync(text);
+    toast.success(`${label} copied to clipboard!`);
+  };
+
+  const handleTestNotification = async () => {
+    const success = await sendLocalTestNotification();
+    if (success) {
+      toast.success("Test notification triggered!");
+    } else {
+      toast.error("Could not trigger test notification");
+    }
+  };
 
   const notificationsEnabled = Boolean(isAuthenticated && !user?.notificationsPaused);
   const selectedRadius = user?.notificationRadiusMeters ?? 2000;
@@ -322,6 +368,123 @@ export default function NotificationSettingsScreen() {
             <Text className="mt-1 text-xs leading-5 text-neutral-600">
               CityDeals uses your latest saved location and only sends nearby deal alerts inside your selected range.
             </Text>
+          </View>
+        </View>
+
+        {/* Manual Push Notification Testing Card */}
+        <View className="mx-4 mt-4 rounded-3xl border border-slate-200 bg-slate-900 p-4 text-white shadow-sm">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center">
+              <Ionicons name="phone-portrait-outline" size={20} color="#38bdf8" />
+              <Text className="ml-2 font-extrabold text-white text-base">
+                Manual Push Testing ({Platform.OS.toUpperCase()})
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleRefreshToken}
+              disabled={isRefreshingToken}
+              className="rounded-lg bg-slate-800 px-2.5 py-1"
+            >
+              {isRefreshingToken ? (
+                <ActivityIndicator size="small" color="#38bdf8" />
+              ) : (
+                <Text className="text-xs font-bold text-sky-400">Refresh</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <Text className="mt-1 text-xs text-slate-400">
+            Environment: {tokenInfo.isDevice ? "Physical Device" : "Simulator / Emulator"} • Status: {tokenInfo.status}
+          </Text>
+
+          {/* Native Token Section */}
+          <View className="mt-3 rounded-2xl bg-slate-800/80 p-3">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-xs font-bold text-slate-300">
+                {Platform.OS === "ios"
+                  ? "iOS APNs Device Token"
+                  : "🔥 Firebase FCM Registration Token"}
+              </Text>
+              {tokenInfo.deviceToken && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    copyToClipboard(
+                      tokenInfo.deviceToken,
+                      Platform.OS === "ios" ? "APNs Token" : "Firebase FCM Token"
+                    )
+                  }
+                  className="rounded-md bg-orange-500/20 px-2 py-0.5"
+                >
+                  <Text className="text-[11px] font-extrabold text-orange-400">
+                    Copy
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text
+              numberOfLines={3}
+              selectable
+              className="mt-1.5 font-mono text-xs text-slate-200"
+            >
+              {tokenInfo.deviceToken ||
+                (!tokenInfo.isDevice
+                  ? "Requires physical device (running on simulator)"
+                  : "Token not registered yet (tap Refresh)")}
+            </Text>
+            {Platform.OS === "android" && tokenInfo.deviceToken && (
+              <Text className="mt-1 text-[11px] text-emerald-400">
+                ✓ Paste directly into Firebase Console &gt; Messaging &gt; Test on device
+              </Text>
+            )}
+            {Platform.OS === "ios" && (
+              <Text className="mt-1 text-[11px] text-slate-400">
+                Native APNs token for iOS push delivery
+              </Text>
+            )}
+          </View>
+
+          {/* Expo Push Token Section */}
+          {tokenInfo.expoPushToken && (
+            <View className="mt-2.5 rounded-2xl bg-slate-800/80 p-3">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xs font-bold text-slate-300">
+                  Expo Push Token (for expo.dev/notifications)
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    copyToClipboard(tokenInfo.expoPushToken, "Expo Push Token")
+                  }
+                  className="rounded-md bg-sky-500/20 px-2 py-0.5"
+                >
+                  <Text className="text-[11px] font-extrabold text-sky-400">
+                    Copy
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text
+                numberOfLines={2}
+                selectable
+                className="mt-1.5 font-mono text-xs text-slate-200"
+              >
+                {tokenInfo.expoPushToken}
+              </Text>
+            </View>
+          )}
+
+          {/* Test Action Buttons */}
+          <View className="mt-3 flex-row items-center space-x-2">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleTestNotification}
+              className="flex-1 rounded-xl bg-orange-500 py-2.5 items-center justify-center"
+            >
+              <Text className="text-xs font-bold text-white">
+                🔔 Test Local Alert
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 

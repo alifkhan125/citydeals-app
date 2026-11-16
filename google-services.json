@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "533561758566-0j97vsv1enclplk6mlam8mq27b3h132f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ai.citydeals.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "533561758566-aj56oijodsid1ejeqrh68kl6ck0ur80p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ai.citydeals.app",
+            "certificate_hash": "a3cd1444bb7e35cd67bc7e26c5d34af7c4075a81"
+          }
+        },
+        {
           "client_id": "533561758566-3afkcc8sf2mhooglmk1i06rb1ogf6sdb.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -31,10 +47,10 @@
               "client_type": 3
             },
             {
-              "client_id": "533561758566-ss7kgbfaikmoler544ff57ms1s3qtgn1.apps.googleusercontent.com",
+              "client_id": "533561758566-ojlf0i5aeqmlfhojop09r3m20u4o21vs.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.citydeals.app"
+                "bundle_id": "ai.citydeals.app"
               }
             }
           ]
@@ -75,10 +91,10 @@
               "client_type": 3
             },
             {
-              "client_id": "533561758566-ss7kgbfaikmoler544ff57ms1s3qtgn1.apps.googleusercontent.com",
+              "client_id": "533561758566-ojlf0i5aeqmlfhojop09r3m20u4o21vs.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.citydeals.app"
+                "bundle_id": "ai.citydeals.app"
               }
             }
           ]

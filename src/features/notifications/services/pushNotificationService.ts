@@ -10,7 +10,6 @@ import { toast } from "sonner-native";
 // Configure how notifications appear when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowBanner: true,
@@ -283,7 +282,11 @@ export async function syncPushTokenWithBackend(): Promise<string | null> {
       return null;
     }
 
-    const response = await apiClient.post(ENDPOINTS.AUTH.PUSH_TOKEN_SYNC, { fcmToken: token });
+    const isSandbox = !Device.isDevice || __DEV__;
+    const response = await apiClient.post(ENDPOINTS.AUTH.PUSH_TOKEN_SYNC, {
+      fcmToken: token,
+      isSandbox,
+    });
     if (response?.data) {
       console.log("[PUSH] Backend push token sync successful:", response.data);
     }

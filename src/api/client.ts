@@ -10,7 +10,8 @@ const resolveBaseUrl = () => {
   if (!envUrl || envUrl.includes("35.222.238.117")) {
     return "https://api.citydeals.ai/api";
   }
-  return envUrl;
+  const cleanUrl = envUrl.replace(/\/+$/, "");
+  return cleanUrl.endsWith("/api") ? cleanUrl : `${cleanUrl}/api`;
 };
 
 const BASE_URL = resolveBaseUrl();

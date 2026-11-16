@@ -24,6 +24,7 @@ import PrimaryButton from "../../components/PrimaryButton";
 import { useAuthStore } from "../../features/auth/store/useAuthStore";
 import { authApi } from "../../features/auth/services/authApi";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function getSafeImagePicker() {
   try {
@@ -36,6 +37,7 @@ function getSafeImagePicker() {
 }
 
 export default function AccountSettingScreen() {
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
@@ -177,7 +179,10 @@ export default function AccountSettingScreen() {
   };
 
   return (
-    <View className="flex-1 bg-neutral-50">
+    <View
+      className="flex-1 bg-neutral-50"
+      style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+    >
       <StatusBar style="light" />
 
       {/* Reusable Curved Header with Back Button */}
@@ -189,7 +194,7 @@ export default function AccountSettingScreen() {
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 24 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Avatar Section */}
@@ -324,7 +329,7 @@ export default function AccountSettingScreen() {
           </View>
 
           {/* Save Change CTA Button */}
-          <View className="px-4 mt-8">
+          <View className="px-4 mt-8 mb-4">
             <PrimaryButton
               title={isSaving ? t("account.saving") : t("account.save_changes")}
               onPress={handleSaveChange}

@@ -214,6 +214,12 @@ export const startBackgroundLocationTracking = async () => {
       return;
     }
 
+    // On Android, ACCESS_BACKGROUND_LOCATION is intentionally omitted for Google Play Store compliance.
+    // Nearby deals and proximity alerts are seamlessly handled via foreground tracking while the app is active.
+    if (Platform.OS === 'android') {
+      return;
+    }
+
     // Check if background location tracking is supported and available natively
     try {
       const isAvailable = await Location.isBackgroundLocationAvailableAsync();
@@ -234,8 +240,9 @@ export const startBackgroundLocationTracking = async () => {
         const res = await Location.requestBackgroundPermissionsAsync().catch(() => null);
         backgroundGranted = res?.status === 'granted';
       }
-    } catch (permError) {
-      console.warn('[Location] Background permission query not available:', permError);
+    } catch {
+      // Permission not in manifest or query failed, skip background task
+      return;
     }
 
     if (!backgroundGranted) {

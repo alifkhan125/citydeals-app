@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ChangePasswordScreen() {
   const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, Platform.OS === "android" ? 48 : 16);
   const { t } = useTranslation();
   const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
 
@@ -94,7 +95,7 @@ export default function ChangePasswordScreen() {
   return (
     <View
       className="flex-1 bg-neutral-50"
-      style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+      style={{ paddingBottom: bottomInset }}
     >
       <StatusBar style="light" />
 
@@ -107,7 +108,7 @@ export default function ChangePasswordScreen() {
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 24 }}
+          contentContainerStyle={{ paddingBottom: bottomInset + 32 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Card Container */}

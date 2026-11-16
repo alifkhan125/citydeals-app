@@ -38,6 +38,7 @@ function getSafeImagePicker() {
 
 export default function AccountSettingScreen() {
   const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, Platform.OS === "android" ? 48 : 16);
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
@@ -181,7 +182,7 @@ export default function AccountSettingScreen() {
   return (
     <View
       className="flex-1 bg-neutral-50"
-      style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+      style={{ paddingBottom: bottomInset }}
     >
       <StatusBar style="light" />
 
@@ -194,7 +195,7 @@ export default function AccountSettingScreen() {
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 24 }}
+          contentContainerStyle={{ paddingBottom: bottomInset + 32 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Avatar Section */}

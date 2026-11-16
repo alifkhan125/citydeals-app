@@ -5,7 +5,6 @@ import { useState, useMemo, useEffect } from "react";
 import {
   Image,
   ActivityIndicator,
-  InteractionManager,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -99,7 +98,7 @@ export default function LoginScreen() {
 
       if (result.idToken) {
         // Run mutation after native Google activity finishes dismissing to prevent black screen / freeze
-        InteractionManager.runAfterInteractions(() => {
+        requestAnimationFrame(() => {
           googleLoginMutation.mutate(result.idToken!, {
             onSettled: () => setIsGoogleLoading(false),
           });

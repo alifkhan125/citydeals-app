@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
-import { InteractionManager, Platform } from "react-native";
+import { Platform } from "react-native";
 import { router } from "expo-router";
 import { apiClient } from "../../../api/client";
 import { ENDPOINTS } from "../../../api/endpoints";
@@ -214,9 +214,7 @@ function handleNotificationResponse(response: Notifications.NotificationResponse
   lastHandledNotificationKey = key;
 
   console.log("[PUSH] Native notification tapped, payload:", data);
-  InteractionManager.runAfterInteractions(() => {
-    setTimeout(() => navigateToNotificationSource(data), 150);
-  });
+  setTimeout(() => navigateToNotificationSource(data), 150);
 }
 
 /**

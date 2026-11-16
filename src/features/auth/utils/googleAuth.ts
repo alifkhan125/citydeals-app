@@ -38,10 +38,6 @@ export async function initGoogleSignIn(): Promise<boolean> {
       if (webClientId) {
         config.webClientId = webClientId;
       }
-      // Only set iosClientId if explicitly provided as fallback; otherwise let the native plist resolve it
-      if (iosClientIdFallback) {
-        (config as any).iosClientId = iosClientIdFallback;
-      }
     }
 
     GoogleSignin.configure(config);

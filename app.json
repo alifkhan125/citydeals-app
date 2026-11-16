@@ -22,7 +22,8 @@
         ],
         "NSLocationWhenInUseUsageDescription": "Allow CityDeals to access your location to show local deals near you.",
         "NSPhotoLibraryUsageDescription": "Allow CityDeals to access your photo library so you can update your profile picture."
-      }
+      },
+      "appleTeamId": "9432UY5SZ5"
     },
     "android": {
       "adaptiveIcon": {
@@ -34,18 +35,29 @@
       "versionCode": 1,
       "googleServicesFile": "./google-services.json",
       "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "POST_NOTIFICATIONS"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.RECORD_AUDIO"
       ],
       "intentFilters": [
         {
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "citydeals.ai", "pathPrefix": "/c/" }
+            {
+              "scheme": "https",
+              "host": "citydeals.ai",
+              "pathPrefix": "/c/"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },

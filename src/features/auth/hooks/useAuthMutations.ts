@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { InteractionManager } from "react-native";
 import { router } from "expo-router";
 import { authApi } from "../services/authApi";
 import { tokenService } from "../services/tokenService";
@@ -28,7 +27,7 @@ export const useAuthMutations = () => {
     }
 
     if (redirectPath) {
-      InteractionManager.runAfterInteractions(() => {
+      requestAnimationFrame(() => {
         router.replace(redirectPath as any);
       });
     }

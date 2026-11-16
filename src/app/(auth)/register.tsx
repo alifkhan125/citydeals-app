@@ -5,7 +5,6 @@ import { useState, useMemo, useEffect } from "react";
 import {
   Image,
   ActivityIndicator,
-  InteractionManager,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -125,7 +124,7 @@ export default function RegisterScreen() {
       }
 
       if (result.idToken) {
-        InteractionManager.runAfterInteractions(() => {
+        requestAnimationFrame(() => {
           googleLoginMutation.mutate(result.idToken!, {
             onSettled: () => setIsGoogleLoading(false),
           });

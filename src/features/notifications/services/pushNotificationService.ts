@@ -96,8 +96,23 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     }
 
     // Attempt native token resolution: APNs on iOS, FCM on Android
-    const tokenData = await Notifications.getDevicePushTokenAsync();
-    const token = tokenData?.data ? String(tokenData.data) : null;
+    let token: string | null = null;
+    try {
+      const tokenData = await Notifications.getDevicePushTokenAsync();
+      token = tokenData?.data ? String(tokenData.data) : null;
+    } catch (deviceTokenErr: any) {
+      console.warn(`[PUSH] getDevicePushTokenAsync failed on ${Platform.OS}:`, deviceTokenErr?.message);
+    }
+
+    // Fallback: If device token failed or in Expo dev/simulator, try getExpoPushTokenAsync
+    if (!token) {
+      try {
+        const expoTokenData = await Notifications.getExpoPushTokenAsync();
+        token = expoTokenData?.data ? String(expoTokenData.data) : null;
+      } catch (expoTokenErr: any) {
+        console.warn("[PUSH] getExpoPushTokenAsync fallback also bypassed:", expoTokenErr?.message);
+      }
+    }
 
     if (token) {
       console.log(`[PUSH] Plug-and-play active: native ${Platform.OS.toUpperCase()} push token resolved:`, token);

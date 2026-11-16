@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState, useMemo } from "react";
 import {
+  Alert,
   Modal,
   RefreshControl,
   ScrollView,
@@ -19,6 +20,8 @@ import { useCurrentUser } from "../../features/auth/hooks/useCurrentUser";
 import { useSavedCoupons, useRedeemedCoupons } from "../../features/coupons/hooks/useCoupons";
 import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "react-i18next";
+import { authApi } from "../../features/auth/services/authApi";
+import ConfirmationModal from "../../components/ConfirmationModal";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -53,19 +56,41 @@ export default function ProfileScreen() {
   const [isLanguageSheetOpen, setIsLanguageSheetOpen] = useState(false);
   const [isRedeemedModalOpen, setIsRedeemedModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [confirmation, setConfirmation] = useState<"logout" | "delete" | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = () => {
-    logoutMutation.mutate(undefined, {
-      onSettled: () => {
-        setTimeout(() => {
-          router.replace("/(auth)/login" as any);
-        }, 50);
-      },
-    });
+    setConfirmation("logout");
   };
 
   const handleGoToAuth = () => {
     router.push("/(auth)/login" as any);
+  };
+
+  const handleDeleteAccount = () => {
+    setConfirmation("delete");
+  };
+
+  const confirmAction = () => {
+    if (confirmation === "logout") {
+      setConfirmation(null);
+      logoutMutation.mutate(undefined, {
+        onSettled: () => setTimeout(() => router.replace("/(auth)/login" as any), 50),
+      });
+      return;
+    }
+    if (confirmation === "delete") {
+      setIsDeleting(true);
+      authApi.deleteAccount().then(() => {
+        setConfirmation(null);
+        useAuthStore.getState().clearSession();
+        router.replace("/(auth)/login" as any);
+      }).catch((err: any) => {
+        const message = err?.response?.data?.message || err?.message || t("profile.delete_account_error");
+        setConfirmation(null);
+        Alert.alert(t("common.error"), Array.isArray(message) ? message[0] : message);
+      }).finally(() => setIsDeleting(false));
+    }
   };
 
   const handleRefresh = async () => {
@@ -106,6 +131,18 @@ export default function ProfileScreen() {
 
   return (
     <View className="flex-1 bg-neutral-50">
+      <ConfirmationModal
+        visible={confirmation !== null}
+        title={confirmation === "delete" ? t("profile.delete_account") : t("profile.log_out", "Log Out")}
+        message={confirmation === "delete" ? t("profile.delete_account_warning") : t("profile.log_out_confirm_message", "Are you sure you want to log out of your account?")}
+        confirmLabel={confirmation === "delete" ? t("profile.delete_account_confirm") : t("profile.log_out", "Log Out")}
+        cancelLabel={t("common.cancel", "Cancel")}
+        destructive={confirmation === "delete"}
+        iconName={confirmation === "delete" ? "trash-2" : "log-out"}
+        loading={isDeleting || logoutMutation.isPending}
+        onCancel={() => !isDeleting && !logoutMutation.isPending && setConfirmation(null)}
+        onConfirm={confirmAction}
+      />
       <StatusBar style="light" />
 
       {/* Reusable Curved Header */}
@@ -309,6 +346,22 @@ export default function ProfileScreen() {
             <Feather name="chevron-right" size={20} color="#9ca3af" />
           </TouchableOpacity>
 
+          {/* Birthday gift */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => {
+              if (!isLoggedIn) router.push("/(auth)/login" as any);
+              else router.push("/screens/birthday-gift" as any);
+            }}
+            className="bg-white border border-neutral-100 rounded-2xl px-4 h-[60px] flex-row items-center justify-between"
+          >
+            <View className="flex-row items-center flex-1">
+              <Feather name="gift" size={20} color="#ea580c" />
+              <Text className="text-neutral-800 font-semibold text-base ml-3.5">Birthday Gift</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#9ca3af" />
+          </TouchableOpacity>
+
           {/* Language */}
           <TouchableOpacity
             activeOpacity={0.7}
@@ -363,6 +416,19 @@ export default function ProfileScreen() {
             <Feather name="chevron-right" size={20} color="#9ca3af" />
           </TouchableOpacity>
         </View>
+
+        {isLoggedIn && (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={handleDeleteAccount}
+            className="bg-white border border-red-200 rounded-2xl py-4 flex-row items-center justify-center mx-4 mt-5"
+          >
+            <Feather name="trash-2" size={20} color="#dc2626" />
+            <Text className="text-red-600 font-bold text-base ml-2">
+              {t("profile.delete_account")}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Log Out or Sign In CTA Button */}
         {isLoggedIn ? (

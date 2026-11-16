@@ -5,7 +5,15 @@ import { ENDPOINTS } from "./endpoints";
 import { AuthTokens } from "../features/auth/types";
 
 // Use the base URL from the .env file (must be prefixed with EXPO_PUBLIC_)
-const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
+const resolveBaseUrl = () => {
+  const envUrl = process.env.EXPO_PUBLIC_BASE_URL?.trim();
+  if (!envUrl || envUrl.includes("35.222.238.117")) {
+    return "https://api.citydeals.ai/api";
+  }
+  return envUrl;
+};
+
+const BASE_URL = resolveBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,

@@ -34,7 +34,6 @@ function CustomBottomTabBar({
       <View
         style={{
           width: "100%",
-          maxWidth: 640,
           height: barHeight,
           paddingBottom: safeBottom,
           backgroundColor: "#ffffff",

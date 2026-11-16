@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { authApi } from "../services/authApi";
 import { tokenService } from "../services/tokenService";
 import { useAuthStore } from "../store/useAuthStore";
@@ -26,8 +27,9 @@ export const useAuthMutations = () => {
     }
 
     if (redirectPath) {
-      const { router } = await import("expo-router");
-      router.replace(redirectPath as any);
+      requestAnimationFrame(() => {
+        router.replace(redirectPath as any);
+      });
     }
   };
 
@@ -53,6 +55,17 @@ export const useAuthMutations = () => {
     },
   });
 
+  const appleLoginMutation = useMutation({
+    mutationFn: authApi.appleLogin,
+    onSuccess: (data) => {
+      handleSuccess(data, "/(tabs)");
+      toast.success("Welcome back!", { description: "Logged in with Apple." });
+    },
+    onError: (error) => {
+      toast.error("Apple Login Failed", { description: handleApiError(error) });
+    },
+  });
+
   const adminLoginMutation = useMutation({
     mutationFn: authApi.adminLogin,
     onSuccess: (data) => {
@@ -70,12 +83,19 @@ export const useAuthMutations = () => {
 
   const signupMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (data) => {
-      handleSuccess(data, "/(tabs)");
-      toast.success("Account Created", { description: "Welcome to CityDeals!" });
-    },
     onError: (error) => {
       toast.error("Signup Failed", { description: handleApiError(error) });
+    },
+  });
+
+  const verifyRegisterOtpMutation = useMutation({
+    mutationFn: authApi.verifyRegisterOtp,
+    onSuccess: (data) => {
+      handleSuccess(data, "/(tabs)");
+      toast.success("Account Verified", { description: "Welcome to CityDeals!" });
+    },
+    onError: (error) => {
+      toast.error("Verification Failed", { description: handleApiError(error) });
     },
   });
 
@@ -99,8 +119,10 @@ export const useAuthMutations = () => {
   return {
     loginMutation,
     googleLoginMutation,
+    appleLoginMutation,
     adminLoginMutation,
     signupMutation,
+    verifyRegisterOtpMutation,
     logoutMutation,
   };
 };

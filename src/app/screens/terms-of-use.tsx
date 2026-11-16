@@ -6,20 +6,99 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  useWindowDimensions,
+  Linking,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
+import RenderHtml, {
+  defaultSystemFonts,
+} from "react-native-render-html";
 import CurvedHeader from "../../components/CurvedHeader";
 import { useTermsOfUse } from "../../features/legal/hooks/useLegal";
 import { useTranslation } from "react-i18next";
 
-interface Section {
-  title?: string;
-  body: string;
-}
+const systemFonts = [
+  ...defaultSystemFonts,
+  "System",
+];
+
+const tagsStyles = {
+  body: {
+    color: "#374151",
+    fontSize: 14,
+    lineHeight: 24,
+  },
+  p: {
+    color: "#4b5563",
+    fontSize: 14,
+    lineHeight: 24,
+    marginBottom: 12,
+  },
+  h1: {
+    color: "#0f172a",
+    fontSize: 22,
+    fontWeight: "800" as const,
+    marginTop: 18,
+    marginBottom: 10,
+    lineHeight: 28,
+  },
+  h2: {
+    color: "#1e293b",
+    fontSize: 18,
+    fontWeight: "700" as const,
+    marginTop: 16,
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  h3: {
+    color: "#334155",
+    fontSize: 16,
+    fontWeight: "700" as const,
+    marginTop: 14,
+    marginBottom: 6,
+    lineHeight: 22,
+  },
+  ul: {
+    marginTop: 4,
+    marginBottom: 12,
+    paddingLeft: 14,
+  },
+  ol: {
+    marginTop: 4,
+    marginBottom: 12,
+    paddingLeft: 14,
+  },
+  li: {
+    color: "#4b5563",
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 6,
+  },
+  strong: {
+    color: "#0f172a",
+    fontWeight: "700" as const,
+  },
+  b: {
+    color: "#0f172a",
+    fontWeight: "700" as const,
+  },
+  a: {
+    color: "#ea580c",
+    textDecorationLine: "underline" as const,
+    fontWeight: "600" as const,
+  },
+  span: {
+    lineHeight: 22,
+  },
+};
 
 export default function TermsOfUseScreen() {
   const { t } = useTranslation();
+  const { width } = useWindowDimensions();
+  // Card padding is 20px on each side (p-5), screen margin 16px on each side (mx-4)
+  const contentWidth = Math.max(width - 72, 280);
+
   const {
     data: terms,
     isLoading,
@@ -41,41 +120,40 @@ export default function TermsOfUseScreen() {
     }
   }, [terms?.updatedAt]);
 
-  const parsedSections = useMemo<Section[]>(() => {
-    if (!terms?.content) return [];
+  const htmlSource = useMemo(() => {
+    const rawContent = terms?.content?.trim();
+    if (!rawContent) return null;
 
-    const rawParagraphs = terms.content
-      .split(/\n\n+/)
-      .map((p) => p.trim())
-      .filter(Boolean);
+    const isHtml = /<[a-z][\s\S]*>/i.test(rawContent);
 
-    const sections: Section[] = [];
-
-    for (const paragraph of rawParagraphs) {
-      if (paragraph.startsWith("#")) {
-        const lines = paragraph.split("\n");
-        const titleLine = lines[0].replace(/^#+\s*/, "").trim();
-        const bodyText = lines.slice(1).join("\n").trim();
-        sections.push({ title: titleLine, body: bodyText || titleLine });
-      } else {
-        const lines = paragraph.split("\n");
-        const firstLine = lines[0].trim();
-        const isHeaderLike =
-          /^\d+\.\s+[A-Za-z0-9\s&/'-]+$/.test(firstLine) ||
-          (firstLine.length < 50 && lines.length > 1);
-
-        if (isHeaderLike && lines.length > 1) {
-          sections.push({
-            title: firstLine,
-            body: lines.slice(1).join("\n").trim(),
-          });
-        } else {
-          sections.push({ body: paragraph });
-        }
-      }
+    if (isHtml) {
+      return { html: rawContent };
     }
 
-    return sections;
+    // Fallback: convert markdown / plain text to styled html
+    const escaped = rawContent
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    const converted = escaped
+      .split(/\n\n+/)
+      .map((block) => {
+        const trimmed = block.trim();
+        if (trimmed.startsWith("# ")) {
+          return `<h1>${trimmed.replace(/^#\s+/, "")}</h1>`;
+        }
+        if (trimmed.startsWith("## ")) {
+          return `<h2>${trimmed.replace(/^##\s+/, "")}</h2>`;
+        }
+        if (trimmed.startsWith("### ")) {
+          return `<h3>${trimmed.replace(/^###\s+/, "")}</h3>`;
+        }
+        return `<p>${trimmed.replace(/\n/g, "<br/>")}</p>`;
+      })
+      .join("");
+
+    return { html: converted };
   }, [terms?.content]);
 
   return (
@@ -152,22 +230,33 @@ export default function TermsOfUseScreen() {
           {/* Content Loaded */}
           {!isLoading && !isError && (
             <>
-              <Text className="text-neutral-600 text-sm leading-6 mb-6">
-                {t("terms.intro")}
-              </Text>
+              {t("terms.intro") ? (
+                <Text className="text-neutral-600 text-sm leading-6 mb-4">
+                  {t("terms.intro")}
+                </Text>
+              ) : null}
 
-              {parsedSections.map((sec, index) => (
-                <View key={index} className="mb-6 last:mb-2">
-                  {sec.title && (
-                    <Text className="text-neutral-900 font-extrabold text-base mb-2">
-                      {sec.title}
-                    </Text>
-                  )}
-                  <Text className="text-neutral-600 text-sm leading-6">
-                    {sec.body}
-                  </Text>
-                </View>
-              ))}
+              {htmlSource ? (
+                <RenderHtml
+                  contentWidth={contentWidth}
+                  source={htmlSource}
+                  tagsStyles={tagsStyles}
+                  systemFonts={systemFonts}
+                  renderersProps={{
+                    a: {
+                      onPress: (_, href) => {
+                        if (href) {
+                          Linking.openURL(href).catch(() => {});
+                        }
+                      },
+                    },
+                  }}
+                />
+              ) : (
+                <Text className="text-neutral-400 text-sm text-center py-6">
+                  No terms content available.
+                </Text>
+              )}
             </>
           )}
         </View>

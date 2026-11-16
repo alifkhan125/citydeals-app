@@ -17,8 +17,11 @@ import PrimaryButton from "../../components/PrimaryButton";
 import { authApi } from "../../features/auth/services/authApi";
 import { useAuthStore } from "../../features/auth/store/useAuthStore";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ChangePasswordScreen() {
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, Platform.OS === "android" ? 48 : 16);
   const { t } = useTranslation();
   const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
 
@@ -90,7 +93,10 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <View className="flex-1 bg-neutral-50">
+    <View
+      className="flex-1 bg-neutral-50"
+      style={{ paddingBottom: bottomInset }}
+    >
       <StatusBar style="light" />
 
       {/* Curved Navy Header with Back Button */}
@@ -102,7 +108,7 @@ export default function ChangePasswordScreen() {
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: bottomInset + 32 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Card Container */}
@@ -258,7 +264,7 @@ export default function ChangePasswordScreen() {
           </View>
 
           {/* Change Password CTA Button */}
-          <View className="px-4 mt-8">
+          <View className="px-4 mt-8 mb-4">
             <PrimaryButton
               title={isSubmitting ? t("change_password.updating") : t("change_password.update_password")}
               onPress={handleChangePassword}

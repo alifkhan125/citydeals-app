@@ -1,5 +1,4 @@
-import { Feather, FontAwesome, FontAwesome6, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import * as Clipboard from "expo-clipboard";
+import { Feather, FontAwesome, FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useMemo, useState } from "react";
@@ -11,17 +10,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { toast } from "sonner-native";
 import { Image } from "expo-image";
-import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../features/auth/store/useAuthStore";
 import { couponsApi } from "../../features/coupons/services/couponsApi";
 import { COUPONS_QUERY_KEY, SAVED_COUPONS_QUERY_KEY, REDEEMED_COUPONS_QUERY_KEY } from "../../features/coupons/hooks/useCoupons";
+import { useRedemptionCooldown } from "../../features/coupons/hooks/useRedemptionCooldown";
 import { Coupon } from "../../features/coupons/types";
 import {
   shareCouponWithSystemSheet,
@@ -29,6 +29,7 @@ import {
   trackCouponShare,
 } from "../../utils/shareUtils";
 import { useTranslation } from "react-i18next";
+import { settingsApi } from "../../features/settings/services/settingsApi";
 
 const fallbackPlaceholder = require("../../../assets/images/placeholder-deal.jpg");
 
@@ -43,6 +44,7 @@ export default function CouponDetailsScreen() {
 
   const params = useLocalSearchParams<{
     id: string;
+    shareSlug?: string;
     dealHeading?: string;
     dealDescription?: string;
     category?: string;
@@ -50,37 +52,49 @@ export default function CouponDetailsScreen() {
   }>();
 
   const dealId = params.id || "";
+  const sharedSlug = params.shareSlug || "";
 
   // Live Coupon State
   const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const activeCouponId = coupon?.id || dealId;
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isRedeemed, setIsRedeemed] = useState(false);
+  const [redemptionAvailableAt, setRedemptionAvailableAt] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now);
   const [isRedeeming, setIsRedeeming] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [isCouponCodeModalVisible, setIsCouponCodeModalVisible] = useState(false);
+  const [couponCodeInput, setCouponCodeInput] = useState("");
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const [shareBaseUrl, setShareBaseUrl] = useState<string | null>(null);
 
   // Modals
   const [isAuthPromptVisible, setIsAuthPromptVisible] = useState(false);
-  const [isRedeemModalVisible, setIsRedeemModalVisible] = useState(false);
 
   // Load live coupon details from backend
   useEffect(() => {
     let isMounted = true;
 
     async function loadCouponDetails() {
-      if (!dealId) {
+      if (!dealId && !sharedSlug) {
         setLoading(false);
         return;
       }
       try {
         setLoading(true);
-        const data = await couponsApi.getCouponById(dealId);
+        const resolvedCoupon = sharedSlug
+          ? await couponsApi.getCouponBySlug(sharedSlug)
+          : await couponsApi.getCouponById(dealId);
+        const data = sharedSlug && isLoggedIn && resolvedCoupon?.id
+          ? await couponsApi.getCouponById(resolvedCoupon.id)
+          : resolvedCoupon;
         if (isMounted && data) {
           setCoupon(data);
           setIsSaved(!!data.isSaved);
           setIsRedeemed(!!data.isRedeemed);
-          setImageError(false);
+          setRedemptionAvailableAt(data.redemptionAvailableAt || null);
+          setNow(Date.now());
         }
       } catch (err) {
         console.warn("Could not fetch coupon details by ID, falling back to params:", err);
@@ -94,32 +108,52 @@ export default function CouponDetailsScreen() {
     return () => {
       isMounted = false;
     };
-  }, [dealId]);
+  }, [dealId, sharedSlug, isLoggedIn]);
 
   useEffect(() => {
-    if (!dealId) return;
-    couponsApi.trackCouponView(dealId).catch((err) => {
+    settingsApi.getAppRedirectSettings()
+      .then((settings) => setShareBaseUrl(settings.baseUrl?.replace(/\/$/, "") || null))
+      .catch(() => setShareBaseUrl(null));
+  }, []);
+
+  const {
+    isCooldownActive: isRedemptionCooldownActive,
+    canRedeem: canRedeemNow,
+    secondsLeft: redemptionSecondsLeft,
+    formattedCountdown,
+  } = useRedemptionCooldown(
+    redemptionAvailableAt,
+    isRedeemed,
+    coupon?.redemptionFrequency || "ONE_TIME"
+  );
+
+  const canRedeemAgain = canRedeemNow;
+  const isPermanentlyRedeemed =
+    isRedeemed &&
+    coupon?.redemptionFrequency === "ONE_TIME";
+
+  useEffect(() => {
+    if (!activeCouponId) return;
+    couponsApi.trackCouponView(activeCouponId).catch((err) => {
       console.warn("Could not track coupon view:", err);
     });
-  }, [dealId]);
+  }, [activeCouponId]);
 
   // Derived Display Values
   const dealHeading = coupon?.title || params.dealHeading || "Exclusive Coupon Deal";
   const dealDescription = coupon?.description || params.dealDescription || "Show this coupon to get instant savings at checkout.";
   const merchantName = coupon?.merchant?.name || "Partner Merchant";
   const merchantAddress = coupon?.merchant?.address || (coupon?.area ? `${coupon.area.name}, ${coupon.area.city || ""}` : "Store location in-app");
-  const couponCode = coupon?.couponCode || `CITY-${dealId ? dealId.slice(0, 8).toUpperCase() : "SAVE"}`;
-  const dealUrl = coupon?.couponLink || `https://citydeals.ai/deals/${coupon?.shareSlug || dealId}`;
-
-  // Dynamic QR Code payload for live camera scanners
-  const qrPayload = useMemo(() => {
-    return `https://citydeals.ai/verify?code=${encodeURIComponent(couponCode)}&id=${encodeURIComponent(dealId)}`;
-  }, [couponCode, dealId]);
+  const configuredBaseUrl = shareBaseUrl || process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/api\/?$/, "").replace(/\/$/, "") || "";
+  const dealUrl = configuredBaseUrl
+    ? `${configuredBaseUrl}/c/${coupon?.shareSlug || sharedSlug || dealId}/open`
+    : "";
 
   // Image Source Resolution with bulletproof fallback
+  const couponImageUrl = coupon?.imageUrl;
   const resolvedImageUrl = useMemo(() => {
-    if (coupon?.imageUrl && coupon.imageUrl.trim() !== "") {
-      return coupon.imageUrl.trim();
+    if (couponImageUrl && couponImageUrl.trim() !== "") {
+      return couponImageUrl.trim();
     }
     if (params.imageUrl && params.imageUrl.trim() !== "") {
       try {
@@ -130,18 +164,14 @@ export default function CouponDetailsScreen() {
       }
     }
     return null;
-  }, [coupon?.imageUrl, params.imageUrl]);
-
-  useEffect(() => {
-    setImageError(false);
-  }, [resolvedImageUrl]);
+  }, [couponImageUrl, params.imageUrl]);
 
   const imageSource = useMemo(() => {
-    if (imageError || !resolvedImageUrl || typeof resolvedImageUrl !== "string" || resolvedImageUrl.trim() === "") {
+    if (failedImageUrl === resolvedImageUrl || !resolvedImageUrl || typeof resolvedImageUrl !== "string" || resolvedImageUrl.trim() === "") {
       return fallbackPlaceholder;
     }
     return { uri: resolvedImageUrl.trim() };
-  }, [imageError, resolvedImageUrl]);
+  }, [failedImageUrl, resolvedImageUrl]);
 
   const showToast = (msg: string) => {
     toast.success(msg);
@@ -158,32 +188,51 @@ export default function CouponDetailsScreen() {
       return;
     }
 
-    // If already redeemed, just open code modal
-    if (isRedeemed) {
-      setIsRedeemModalVisible(true);
+    // Repeat redemption follows this coupon's frequency and backend cooldown.
+    if (isRedeemed && !canRedeemAgain) {
+      toast.error(
+        isRedemptionCooldownActive
+          ? `This coupon is locked for ${formattedCountdown}.`
+          : "This coupon has already been redeemed.",
+      );
       return;
     }
 
-    // Perform live redemption
-    executeRedeemCoupon();
+    setCouponCodeInput("");
+    setIsCouponCodeModalVisible(true);
   };
 
-  const executeRedeemCoupon = async () => {
+  const executeRedeemCoupon = async (couponCode: string) => {
     try {
       setIsRedeeming(true);
-      await couponsApi.redeemCoupon(dealId);
+      const result = await couponsApi.redeemCoupon(activeCouponId, couponCode);
+      setIsCouponCodeModalVisible(false);
+      setCouponCodeInput("");
       setIsRedeemed(true);
-      setIsRedeemModalVisible(true);
+      setRedemptionAvailableAt(result?.redemptionAvailableAt || null);
+      setNow(Date.now());
       queryClient.invalidateQueries({ queryKey: REDEEMED_COUPONS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       showToast("Coupon redeemed successfully!");
+      await handleShareDeal();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to redeem coupon";
       const errorText = Array.isArray(msg) ? msg[0] : msg;
 
-      if (err.response?.status === 409 || errorText.toLowerCase().includes("already redeemed")) {
+      if (err.response?.status === 409) {
+        try {
+          const latest = await couponsApi.getCouponById(activeCouponId);
+          setCoupon(latest);
+          setIsRedeemed(!!latest.isRedeemed);
+          setRedemptionAvailableAt(latest.redemptionAvailableAt || null);
+          setNow(Date.now());
+        } catch {
+          // Keep the original conflict message if refreshing fails.
+        }
+      }
+
+      if (errorText.toLowerCase().includes("already redeemed")) {
         setIsRedeemed(true);
-        setIsRedeemModalVisible(true);
         queryClient.invalidateQueries({ queryKey: REDEEMED_COUPONS_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: ["currentUser"] });
         showToast("You have already redeemed this coupon.");
@@ -193,6 +242,15 @@ export default function CouponDetailsScreen() {
     } finally {
       setIsRedeeming(false);
     }
+  };
+
+  const handleCouponCodeSubmit = () => {
+    const code = couponCodeInput.trim();
+    if (!code) {
+      toast.error("Enter the coupon code provided by the business.");
+      return;
+    }
+    void executeRedeemCoupon(code);
   };
 
   // Save / Favorite Toggle Handler
@@ -205,19 +263,19 @@ export default function CouponDetailsScreen() {
     try {
       setIsSaving(true);
       if (isSaved) {
-        await couponsApi.unsaveCoupon(dealId);
+        await couponsApi.unsaveCoupon(activeCouponId);
         setIsSaved(false);
         queryClient.setQueryData<Coupon[]>(SAVED_COUPONS_QUERY_KEY, (old = []) =>
-          old.filter((c) => c.id !== dealId)
+          old.filter((c) => c.id !== activeCouponId)
         );
         showToast("Coupon removed from saved.");
       } else {
-        await couponsApi.saveCoupon(dealId);
+        await couponsApi.saveCoupon(activeCouponId);
         setIsSaved(true);
         if (coupon) {
           queryClient.setQueryData<Coupon[]>(SAVED_COUPONS_QUERY_KEY, (old = []) => [
             { ...coupon, isSaved: true },
-            ...old.filter((c) => c.id !== dealId),
+            ...old.filter((c) => c.id !== activeCouponId),
           ]);
         }
         showToast("Coupon saved successfully!");
@@ -230,12 +288,6 @@ export default function CouponDetailsScreen() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  // Copy coupon code
-  const handleCopyCouponCode = async () => {
-    await Clipboard.setStringAsync(couponCode);
-    showToast("Coupon code copied to clipboard!");
   };
 
 function ensureHttps(url?: string | null): string | null {
@@ -343,35 +395,6 @@ function ensureHttps(url?: string | null): string | null {
 
   const headerHeight = insets.top + 12 + 44 + 16;
 
-  const formattedExpiry = useMemo(() => {
-    if (coupon?.expiresAt) {
-      try {
-        const d = new Date(coupon.expiresAt);
-        const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-        return t("coupon_details.valid_until", { date: dateStr, defaultValue: `Valid until ${dateStr}` });
-      } catch {
-        return t("coupon_details.limited_time", "Limited time offer");
-      }
-    }
-    return t("coupon_details.ongoing_deal", "Ongoing Deal");
-  }, [coupon?.expiresAt, t]);
-
-  const frequencyLabel = useMemo(() => {
-    if (!coupon?.redemptionFrequency) return t("coupon_details.single_use", "Single Use");
-    switch (coupon.redemptionFrequency) {
-      case "ONE_TIME":
-        return t("coupon_details.single_use", "Single Use Only");
-      case "DAILY":
-        return t("coupon_details.once_daily", "Once Daily");
-      case "WEEKLY":
-        return t("coupon_details.once_weekly", "Once Weekly");
-      case "UNLIMITED":
-        return t("coupon_details.unlimited_use", "Unlimited Use");
-      default:
-        return coupon.redemptionFrequency;
-    }
-  }, [coupon?.redemptionFrequency, t]);
-
   return (
     <View className="flex-1 bg-white">
       <StatusBar style="light" />
@@ -468,7 +491,7 @@ function ensureHttps(url?: string | null): string | null {
               style={{ width: "100%", height: 380 }}
               contentFit="cover"
               transition={200}
-              onError={() => setImageError(true)}
+              onError={() => setFailedImageUrl(resolvedImageUrl)}
             />
           </View>
         </View>
@@ -506,9 +529,9 @@ function ensureHttps(url?: string | null): string | null {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleRedeemPress}
-            disabled={isRedeeming || isBlockedUser}
+            disabled={isRedeeming || isBlockedUser || (isRedeemed && !canRedeemAgain)}
             style={{
-              backgroundColor: isBlockedUser ? "#94a3b8" : isRedeemed ? "#059669" : "#ea580c",
+              backgroundColor: isBlockedUser ? "#94a3b8" : (isRedemptionCooldownActive || isPermanentlyRedeemed) ? "#059669" : "#ea580c",
             }}
             className="w-full flex-row items-center justify-center gap-2.5 rounded-2xl py-4 mb-3"
           >
@@ -517,7 +540,7 @@ function ensureHttps(url?: string | null): string | null {
             ) : (
               <>
                 <Ionicons
-                  name={isRedeemed ? "checkmark-circle" : "ticket"}
+                  name={(isRedemptionCooldownActive || isPermanentlyRedeemed) ? "checkmark-circle" : "ticket"}
                   size={22}
                   color="#ffffff"
                 />
@@ -525,11 +548,28 @@ function ensureHttps(url?: string | null): string | null {
                   style={{ color: "#ffffff" }}
                   className="text-white text-base font-bold tracking-wide"
                 >
-                  {isBlockedUser ? blockedMessage : isRedeemed ? t("coupon_details.already_redeemed", "Coupon Already Redeemed") : t("coupon_details.redeem_coupon", "Redeem Coupon")}
+                  {isBlockedUser
+                    ? blockedMessage
+                    : isRedemptionCooldownActive
+                      ? "Already Redeemed"
+                      : canRedeemAgain
+                        ? "Redeem Again"
+                        : isPermanentlyRedeemed
+                          ? "Already Redeemed"
+                        : t("coupon_details.redeem_coupon", "Redeem Coupon")}
                 </Text>
               </>
             )}
           </TouchableOpacity>
+
+          {isRedemptionCooldownActive && (
+            <View className="mb-4 flex-row items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <Ionicons name="time-outline" size={18} color="#047857" />
+              <Text className="ml-2 text-sm font-semibold text-emerald-700">
+                You can redeem this coupon again in {formattedCountdown}
+              </Text>
+            </View>
+          )}
 
           {/* Secondary Action: Save coupon */}
           <TouchableOpacity
@@ -677,6 +717,51 @@ function ensureHttps(url?: string | null): string | null {
 
       {/* Guest Authentication Required Modal */}
       <Modal
+        visible={isCouponCodeModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => !isRedeeming && setIsCouponCodeModalVisible(false)}
+      >
+        <View style={{ paddingBottom: Math.max(insets.bottom, 24) }} className="flex-1 bg-black/60 items-center justify-center px-5">
+          <View className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl">
+            <Text className="text-xl font-extrabold text-neutral-900">Enter coupon code</Text>
+            <Text className="text-neutral-500 text-sm mt-2 leading-5">
+              Enter the coupon code provided by the business to redeem this offer.
+            </Text>
+            <TextInput
+              value={couponCodeInput}
+              onChangeText={(text) =>
+                setCouponCodeInput(text.toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 10))
+              }
+              placeholder="Enter coupon code"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={10}
+              editable={!isRedeeming}
+              className="w-full h-12 border border-neutral-200 rounded-xl px-4 mt-5 text-neutral-900 font-semibold tracking-wider"
+            />
+            <View className="flex-row gap-3 mt-5">
+              <TouchableOpacity
+                disabled={isRedeeming}
+                onPress={() => setIsCouponCodeModalVisible(false)}
+                className="flex-1 rounded-xl bg-neutral-100 py-3.5 items-center"
+              >
+                <Text className="text-neutral-700 font-bold">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={isRedeeming}
+                onPress={handleCouponCodeSubmit}
+                className="flex-1 rounded-xl bg-orange-500 py-3.5 items-center"
+              >
+                {isRedeeming ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold">Verify</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={isAuthPromptVisible}
         transparent
         animationType="fade"
@@ -739,101 +824,6 @@ function ensureHttps(url?: string | null): string | null {
         </View>
       </Modal>
 
-      {/* Authenticated Coupon Redemption Modal */}
-      <Modal
-        visible={isRedeemModalVisible}
-        transparent
-        animationType="slide"
-        statusBarTranslucent
-        onRequestClose={() => setIsRedeemModalVisible(false)}
-      >
-        <View className="flex-1 bg-black/60 justify-end">
-          {/* Dismiss backdrop */}
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={() => setIsRedeemModalVisible(false)}
-            className="flex-1"
-          />
-
-          {/* Bottom Sheet Card */}
-          <View
-            style={{
-              paddingBottom: Math.max(insets.bottom, Platform.OS === "android" ? 36 : 24) + 20,
-            }}
-            className="bg-white rounded-t-[32px] px-6 pt-5 items-center shadow-2xl"
-          >
-            {/* Grabber indicator */}
-            <View className="w-12 h-1.5 rounded-full bg-neutral-200 mb-4" />
-
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              bounces={false}
-              contentContainerStyle={{ alignItems: "center", width: "100%" }}
-              style={{ width: "100%", maxHeight: "88%" }}
-            >
-              <View className="w-14 h-14 rounded-full bg-emerald-100 items-center justify-center mb-3">
-                <Ionicons name="checkmark-circle" size={32} color="#10b981" />
-              </View>
-
-              <Text className="text-2xl font-extrabold text-neutral-900 text-center tracking-tight">
-                {t("coupon_details.ready_to_redeem", "Ready to Redeem!")}
-              </Text>
-              <Text className="text-neutral-500 text-sm text-center mt-1">
-                {t("coupon_details.present_to_cashier", "Present this coupon code or QR to the cashier at checkout.")}
-              </Text>
-
-              {/* QR Code Container */}
-              <View className="w-full bg-neutral-50 rounded-3xl p-5 items-center border border-neutral-200 mt-5">
-                <View className="bg-white p-4 rounded-2xl border border-neutral-200/80 items-center justify-center mb-4 shadow-sm">
-                  <QRCode
-                    value={qrPayload}
-                    size={160}
-                    color="#0f172a"
-                    backgroundColor="#ffffff"
-                  />
-                </View>
-
-                {/* Coupon Code Pill */}
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={handleCopyCouponCode}
-                  className="flex-row items-center bg-white border border-orange-200 px-5 py-2.5 rounded-full shadow-sm"
-                >
-                  <Text className="text-orange-600 font-extrabold text-lg tracking-wider mr-2">
-                    {couponCode}
-                  </Text>
-                  <MaterialCommunityIcons
-                    name="content-copy"
-                    size={16}
-                    color="#ea580c"
-                  />
-                </TouchableOpacity>
-
-                <View className="flex-row items-center gap-1.5 mt-2.5">
-                  <Ionicons name="scan-outline" size={13} color="#ea580c" />
-                  <Text className="text-[11px] font-semibold text-neutral-500">
-                    Live Scannable QR Code
-                  </Text>
-                </View>
-              </View>
-
-              <Text className="text-neutral-500 font-medium text-xs mt-3">
-                {formattedExpiry} • {frequencyLabel}
-              </Text>
-
-              {/* Done CTA */}
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => setIsRedeemModalVisible(false)}
-                style={{ backgroundColor: "#0f172a" }}
-                className="w-full rounded-2xl py-4 items-center justify-center mt-6 shadow-sm"
-              >
-                <Text style={{ color: "#ffffff" }} className="text-white font-bold text-base">{t("common.done", "Done")}</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

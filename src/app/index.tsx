@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Redirect, router, useRootNavigationState } from "expo-router";
+import { router, useRootNavigationState } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import PrimaryButton from "../components/PrimaryButton";
 import { LANGUAGES } from "../config/constants";
@@ -34,23 +34,24 @@ export default function LanguageSelectionScreen() {
 
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language || "en");
 
+  // Initial routing decision on cold boot
+  useEffect(() => {
+    if (!isHydrated || !rootNavigationState?.key) return;
+
+    if (isAuthenticated && user) {
+      router.replace("/(tabs)");
+    } else if (onboardingCompleted) {
+      router.replace("/(auth)/login");
+    }
+  }, [isHydrated, rootNavigationState?.key]);
+
   // 1. Wait for persisted storage to load and navigation to be ready before deciding route
-  if (!isHydrated || !rootNavigationState?.key) {
+  if (!isHydrated || !rootNavigationState?.key || (isAuthenticated && user) || onboardingCompleted) {
     return (
       <View className="flex-1 bg-white items-center justify-center">
         <ActivityIndicator size="large" color="#ea580c" />
       </View>
     );
-  }
-
-  // 2. If already logged in: bypass language & onboarding, jump straight into (tabs)
-  if (isAuthenticated && user) {
-    return <Redirect href="/(tabs)" />;
-  }
-
-  // 3. If onboarding was already completed before, direct to login
-  if (onboardingCompleted) {
-    return <Redirect href="/(auth)/login" />;
   }
 
   const handleSelectLanguage = async (code: string) => {

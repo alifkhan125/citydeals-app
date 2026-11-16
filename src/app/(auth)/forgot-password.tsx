@@ -219,7 +219,7 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#ffffff" }}>
       <StatusBar style="dark" />
 
       {/* Top Header Bar */}
@@ -234,19 +234,18 @@ export default function ForgotPasswordScreen() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
-            justifyContent: keyboardVisible ? "flex-start" : "center",
+            paddingBottom: 40,
             paddingHorizontal: 24,
-            paddingTop: keyboardVisible ? 12 : 0,
-            paddingBottom: keyboardVisible ? 220 : 32,
+            paddingTop: 12,
           }}
-          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <View style={{ maxWidth: 460, width: "100%", alignSelf: "center" }}>
             {/* Centered Logo */}

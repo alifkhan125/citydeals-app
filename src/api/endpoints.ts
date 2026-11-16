@@ -3,6 +3,7 @@ export const ENDPOINTS = {
     LOGIN: "/auth/login",
     ADMIN_LOGIN: "/auth/admin-login",
     REGISTER: "/auth/register",
+    VERIFY_REGISTER_OTP: "/auth/verify-register-otp",
     REFRESH: "/auth/refresh",
     LOGOUT: "/auth/logout",
     ME: "/auth/me",
@@ -15,6 +16,7 @@ export const ENDPOINTS = {
   },
   USERS: {
     ME: "/me",
+    DELETE_ME: "/me",
     AVATAR: "/me/avatar",
     LANGUAGE: "/me/language",
   },
@@ -37,6 +39,14 @@ export const ENDPOINTS = {
   NOTIFICATIONS: {
     LIST: "/notifications",
     SETTINGS: "/me/notifications",
+  },
+  BIRTHDAY_GIFTS: {
+    AVAILABLE: "/birthday-gifts/available",
+    CLAIMS: "/birthday-gifts/my-claims",
+    CLAIM: (id: string) => `/birthday-gifts/${id}/claim`,
+  },
+  SETTINGS: {
+    STORE_LINKS: "/settings/store-links",
   },
   SUPPORT: {
     CREATE_TICKET: "/support/tickets",

@@ -18,13 +18,33 @@ export const authApi = {
     return data?.data || data;
   },
 
-  register: async (credentials: any): Promise<AuthResponse> => {
+  appleLogin: async (payload: {
+    identityToken: string;
+    email?: string;
+    fullName?: string;
+    nonce?: string;
+  }): Promise<AuthResponse> => {
+    const { data } = await apiClient.post<any>('/auth/apple', payload);
+    return data?.data || data;
+  },
+
+  register: async (credentials: any): Promise<any> => {
     const { data } = await apiClient.post<any>(ENDPOINTS.AUTH.REGISTER, credentials);
+    return data?.data || data;
+  },
+
+  verifyRegisterOtp: async (payload: { email: string; otp: string }): Promise<AuthResponse> => {
+    const { data } = await apiClient.post<any>(ENDPOINTS.AUTH.VERIFY_REGISTER_OTP, payload);
     return data?.data || data;
   },
 
   logout: async (): Promise<void> => {
     await apiClient.post(ENDPOINTS.AUTH.LOGOUT);
+  },
+
+  deleteAccount: async (): Promise<{ deleted: boolean; message: string }> => {
+    const { data } = await apiClient.delete<any>(ENDPOINTS.USERS.DELETE_ME);
+    return data?.data || data;
   },
 
   getCurrentUser: async (): Promise<User> => {

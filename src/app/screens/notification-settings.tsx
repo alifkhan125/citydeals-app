@@ -372,7 +372,8 @@ export default function NotificationSettingsScreen() {
         </View>
 
         {/* Manual Push Notification Testing Card */}
-        <View className="mx-4 mt-4 rounded-3xl border border-slate-200 bg-slate-900 p-4 text-white shadow-sm">
+        
+        {/* <View className="mx-4 mt-4 rounded-3xl border border-slate-200 bg-slate-900 p-4 text-white shadow-sm">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center">
               <Ionicons name="phone-portrait-outline" size={20} color="#38bdf8" />
@@ -398,7 +399,7 @@ export default function NotificationSettingsScreen() {
             Environment: {tokenInfo.isDevice ? "Physical Device" : "Simulator / Emulator"} • Status: {tokenInfo.status}
           </Text>
 
-          {/* Native Token Section */}
+         
           <View className="mt-3 rounded-2xl bg-slate-800/80 p-3">
             <View className="flex-row items-center justify-between">
               <Text className="text-xs font-bold text-slate-300">
@@ -445,7 +446,7 @@ export default function NotificationSettingsScreen() {
             )}
           </View>
 
-          {/* Expo Push Token Section */}
+         
           {tokenInfo.expoPushToken && (
             <View className="mt-2.5 rounded-2xl bg-slate-800/80 p-3">
               <View className="flex-row items-center justify-between">
@@ -474,7 +475,7 @@ export default function NotificationSettingsScreen() {
             </View>
           )}
 
-          {/* Test Action Buttons */}
+        
           <View className="mt-3 flex-row items-center space-x-2">
             <TouchableOpacity
               activeOpacity={0.8}
@@ -486,7 +487,7 @@ export default function NotificationSettingsScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </View> */}
 
         {updateSettings.isPending && (
           <View className="mt-5 flex-row items-center justify-center">
@@ -500,3 +501,123 @@ export default function NotificationSettingsScreen() {
     </View>
   );
 }
+
+
+/**
+       <View className="mx-4 mt-4 rounded-3xl border border-slate-200 bg-slate-900 p-4 text-white shadow-sm">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center">
+              <Ionicons name="phone-portrait-outline" size={20} color="#38bdf8" />
+              <Text className="ml-2 font-extrabold text-white text-base">
+                Manual Push Testing ({Platform.OS.toUpperCase()})
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleRefreshToken}
+              disabled={isRefreshingToken}
+              className="rounded-lg bg-slate-800 px-2.5 py-1"
+            >
+              {isRefreshingToken ? (
+                <ActivityIndicator size="small" color="#38bdf8" />
+              ) : (
+                <Text className="text-xs font-bold text-sky-400">Refresh</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <Text className="mt-1 text-xs text-slate-400">
+            Environment: {tokenInfo.isDevice ? "Physical Device" : "Simulator / Emulator"} • Status: {tokenInfo.status}
+          </Text>
+
+         Native Token Section 
+          <View className="mt-3 rounded-2xl bg-slate-800/80 p-3">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-xs font-bold text-slate-300">
+                {Platform.OS === "ios"
+                  ? "iOS APNs Device Token"
+                  : "🔥 Firebase FCM Registration Token"}
+              </Text>
+              {tokenInfo.deviceToken && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    copyToClipboard(
+                      tokenInfo.deviceToken,
+                      Platform.OS === "ios" ? "APNs Token" : "Firebase FCM Token"
+                    )
+                  }
+                  className="rounded-md bg-orange-500/20 px-2 py-0.5"
+                >
+                  <Text className="text-[11px] font-extrabold text-orange-400">
+                    Copy
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text
+              numberOfLines={3}
+              selectable
+              className="mt-1.5 font-mono text-xs text-slate-200"
+            >
+              {tokenInfo.deviceToken ||
+                (!tokenInfo.isDevice
+                  ? "Requires physical device (running on simulator)"
+                  : "Token not registered yet (tap Refresh)")}
+            </Text>
+            {Platform.OS === "android" && tokenInfo.deviceToken && (
+              <Text className="mt-1 text-[11px] text-emerald-400">
+                ✓ Paste directly into Firebase Console &gt; Messaging &gt; Test on device
+              </Text>
+            )}
+            {Platform.OS === "ios" && (
+              <Text className="mt-1 text-[11px] text-slate-400">
+                Native APNs token for iOS push delivery
+              </Text>
+            )}
+          </View>
+
+           Expo Push Token Section 
+          {tokenInfo.expoPushToken && (
+            <View className="mt-2.5 rounded-2xl bg-slate-800/80 p-3">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xs font-bold text-slate-300">
+                  Expo Push Token (for expo.dev/notifications)
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    copyToClipboard(tokenInfo.expoPushToken, "Expo Push Token")
+                  }
+                  className="rounded-md bg-sky-500/20 px-2 py-0.5"
+                >
+                  <Text className="text-[11px] font-extrabold text-sky-400">
+                    Copy
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text
+                numberOfLines={2}
+                selectable
+                className="mt-1.5 font-mono text-xs text-slate-200"
+              >
+                {tokenInfo.expoPushToken}
+              </Text>
+            </View>
+          )}
+
+           Test Action Buttons 
+          <View className="mt-3 flex-row items-center space-x-2">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleTestNotification}
+              className="flex-1 rounded-xl bg-orange-500 py-2.5 items-center justify-center"
+            >
+              <Text className="text-xs font-bold text-white">
+                🔔 Test Local Alert
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+ */

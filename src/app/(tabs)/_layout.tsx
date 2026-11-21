@@ -11,13 +11,14 @@ interface CustomTabBarProps {
   insets: any;
 }
 
-function CustomBottomTabBar({
+const CustomBottomTabBar = React.memo(function CustomBottomTabBar({
   state,
   descriptors,
   navigation,
   insets,
 }: CustomTabBarProps) {
-  const safeBottom = Math.max(insets.bottom, Platform.OS === "android" ? 6 : 0);
+  const rawBottom = insets?.bottom ?? 0;
+  const safeBottom = Math.max(Math.round(rawBottom), Platform.OS === "android" ? 6 : 0);
   const barHeight = 64 + safeBottom;
 
   return (
@@ -102,7 +103,7 @@ function CustomBottomTabBar({
       </View>
     </View>
   );
-}
+});
 
 export default function TabLayout() {
   const { t } = useTranslation();

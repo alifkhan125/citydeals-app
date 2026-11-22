@@ -523,7 +523,7 @@ export default function HomeScreen() {
           </View>
         }
         renderItem={({ item }: { item: DealItem }) => (
-          <View style={{ flex: 1, paddingHorizontal: isWide ? 8 : 16 }}>
+          <View style={{ flex: 1, paddingHorizontal: isWide ? 8 : 12 }}>
             <DealCard
               deal={item}
               onPressOpen={handleOpenDeal}

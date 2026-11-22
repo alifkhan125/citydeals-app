@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     paddingBottom: 110,
   },
   feedContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   loadingContainer: {
     paddingVertical: 60,

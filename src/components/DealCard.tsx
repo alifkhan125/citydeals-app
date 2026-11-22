@@ -57,21 +57,28 @@ export default function DealCard({
       style={{
         shadowColor: "#000000",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
+        shadowOpacity: 0.1,
         shadowRadius: 12,
         elevation: 4,
         width: "100%",
         alignSelf: "center",
       }}
-      className="bg-white rounded-[26px] p-4 mb-5 border border-slate-200"
+      className="bg-white rounded-[28px] p-3 mb-5 border border-slate-100"
     >
       {/* Banner Container */}
-      <View className="rounded-2xl overflow-hidden bg-neutral-100 relative">
+      <View
+        style={{
+          width: "100%",
+          aspectRatio: 4 / 5,
+          backgroundColor: "#000000",
+        }}
+        className="rounded-[22px] overflow-hidden relative"
+      >
         {/* Favorite Heart Button */}
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleFavoriteToggle}
-          className="absolute top-3 right-3 w-10 h-10 rounded-2xl bg-white items-center justify-center z-20 border border-neutral-100"
+          className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white items-center justify-center z-20 shadow-md"
         >
           <Ionicons
             name={isFavorite ? "heart" : "heart-outline"}
@@ -85,20 +92,25 @@ export default function DealCard({
           <View
             style={{
               position: "absolute",
-              top: 12,
-              left: 12,
+              top: 54,
+              right: 10,
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: "rgba(15, 23, 42, 0.8)",
+              backgroundColor: "rgba(15, 23, 42, 0.88)",
               paddingHorizontal: 10,
               paddingVertical: 5,
               borderRadius: 20,
               zIndex: 20,
               borderWidth: 1,
               borderColor: "rgba(255, 255, 255, 0.2)",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 3,
             }}
           >
-            <Ionicons name="navigate-sharp" size={12} color="#ea580c" />
+            <Ionicons name="location-sharp" size={13} color="#ffffff" />
             <Text
               style={{
                 color: "#ffffff",
@@ -115,18 +127,18 @@ export default function DealCard({
         {/* Poster Image */}
         <Image
           source={imageSource}
-          className="w-full"
-          style={{ width: "100%", height: 260 }}
+          className="w-full h-full"
+          style={{ width: "100%", height: "100%" }}
           contentFit="cover"
         />
       </View>
 
       {/* Card Info Details */}
-      <View className="pt-3.5 pb-1 px-1">
+      <View className="pt-3.5 pb-1 px-1.5">
         {deal.merchantName ? (
           <Text
             style={{
-              color: "#ea580c",
+              color: "#64748b",
               fontSize: 12,
               fontWeight: "700",
               textTransform: "uppercase",
@@ -138,21 +150,42 @@ export default function DealCard({
             {deal.merchantName}
           </Text>
         ) : null}
-        <Text className="text-neutral-900 font-bold text-lg">
+        <Text
+          style={{
+            color: "#0f172a",
+            fontSize: 19,
+            fontWeight: "800",
+            letterSpacing: -0.3,
+            lineHeight: 24,
+          }}
+          numberOfLines={2}
+        >
           {deal.dealHeading}
         </Text>
-        <Text className="text-neutral-500 text-base mt-0.5 font-normal">
-          {deal.dealDescription}
-        </Text>
+        {deal.dealDescription ? (
+          <Text
+            style={{
+              color: "#64748b",
+              fontSize: 14,
+              fontWeight: "400",
+              marginTop: 4,
+              lineHeight: 20,
+            }}
+            numberOfLines={2}
+          >
+            {deal.dealDescription}
+          </Text>
+        ) : null}
       </View>
 
       {/* Action CTA Button */}
       <PrimaryButton
-        title={actionTitle || t("common.open", "Open")}
+        title={actionTitle || t("common.open", "Open Deal")}
         onPress={() => onPressOpen?.(deal)}
         disabled={actionDisabled}
         loading={actionLoading}
-        className="mt-3.5"
+        className="mt-3.5 rounded-full py-3.5 bg-[#f97316] active:bg-[#ea580c]"
+        textClassName="text-base font-bold tracking-normal"
       />
     </View>
   );

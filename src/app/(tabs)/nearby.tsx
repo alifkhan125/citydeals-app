@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     paddingBottom: 110,
   },
   feedContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   locationBanner: {
     flexDirection: "row",

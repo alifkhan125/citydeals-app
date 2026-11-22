@@ -306,12 +306,14 @@ export default function HomeScreen() {
 
       return {
         id: c.id,
-        category: c.category?.name || "General",
+        category: c.category?.name || c.merchant?.category?.name || "General",
         dealHeading: c.title,
         dealDescription: c.description,
         image: c.imageUrl || require("../../../assets/images/placeholder-deal.jpg"),
         isFavorite: isLoggedIn ? savedSet.has(c.id) : false,
         distance: formatDistance(distanceMeters ? distanceMeters / 1000 : null) || "",
+        merchantName: c.merchant?.name,
+        merchantLogo: c.merchant?.logoUrl || null,
       };
     });
   }, [serverCoupons, savedSet, coords]);

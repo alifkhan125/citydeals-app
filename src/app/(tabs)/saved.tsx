@@ -41,11 +41,13 @@ export default function SavedScreen() {
     if (!isLoggedIn || !serverSavedCoupons) return [];
     return serverSavedCoupons.map((c) => ({
       id: c.id,
-      category: c.category?.name || "General",
+      category: c.category?.name || c.merchant?.category?.name || "General",
       dealHeading: c.title,
       dealDescription: c.description,
       image: c.imageUrl || require("../../../assets/images/placeholder-deal.jpg"),
       isFavorite: true,
+      merchantName: c.merchant?.name,
+      merchantLogo: c.merchant?.logoUrl || null,
     }));
   }, [isLoggedIn, serverSavedCoupons]);
 

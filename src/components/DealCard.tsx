@@ -21,6 +21,7 @@ export interface DealItem {
   isFavorite?: boolean;
   distance?: string;
   merchantName?: string;
+  merchantLogo?: string | null;
 }
 
 interface DealCardProps {
@@ -74,6 +75,36 @@ export default function DealCard({
         }}
         className="rounded-[22px] overflow-hidden relative"
       >
+        {/* Brand Logo Box (Top-Left like image1.png) */}
+        <View
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 12,
+            zIndex: 25,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.15,
+            shadowRadius: 6,
+            elevation: 4,
+          }}
+          className="w-12 h-12 rounded-2xl bg-white p-1 border-2 border-white items-center justify-center overflow-hidden"
+        >
+          {deal.merchantLogo ? (
+            <Image
+              source={{ uri: deal.merchantLogo }}
+              style={{ width: "100%", height: "100%", borderRadius: 10 }}
+              contentFit="contain"
+            />
+          ) : (
+            <View className="w-full h-full rounded-xl bg-orange-50 items-center justify-center border border-orange-100">
+              <Text className="text-orange-600 font-black text-sm">
+                {deal.merchantName ? deal.merchantName.slice(0, 4).toUpperCase() : "CD"}
+              </Text>
+            </View>
+          )}
+        </View>
+
         {/* Favorite Heart Button */}
         <TouchableOpacity
           activeOpacity={0.8}
@@ -87,7 +118,7 @@ export default function DealCard({
           />
         </TouchableOpacity>
 
-        {/* Distance Badge (Bottom-Left like image5.png) */}
+        {/* Location Distance Badge (Bottom-Left like image1.png & image5.png) */}
         {deal.distance ? (
           <View
             style={{
@@ -137,21 +168,40 @@ export default function DealCard({
 
       {/* Card Info Details */}
       <View className="pt-3.5 pb-1 px-1.5">
-        {deal.merchantName ? (
-          <Text
-            style={{
-              color: "#64748b",
-              fontSize: 12,
-              fontWeight: "700",
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-              marginBottom: 4,
-            }}
-            numberOfLines={1}
-          >
-            {deal.merchantName}
-          </Text>
-        ) : null}
+        <View className="flex-row items-center flex-wrap mb-1">
+          {deal.merchantName ? (
+            <Text
+              style={{
+                color: "#ea580c",
+                fontSize: 12,
+                fontWeight: "800",
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+              numberOfLines={1}
+            >
+              {deal.merchantName}
+            </Text>
+          ) : null}
+          {deal.merchantName && deal.category ? (
+            <Text style={{ color: "#cbd5e1", marginHorizontal: 6, fontSize: 10 }}>
+              •
+            </Text>
+          ) : null}
+          {deal.category ? (
+            <Text
+              style={{
+                color: "#64748b",
+                fontSize: 12,
+                fontWeight: "600",
+              }}
+              numberOfLines={1}
+            >
+              {deal.category}
+            </Text>
+          ) : null}
+        </View>
+
         <Text
           style={{
             color: "#0f172a",
@@ -186,7 +236,7 @@ export default function DealCard({
         onPress={() => onPressOpen?.(deal)}
         disabled={actionDisabled}
         loading={actionLoading}
-        className="mt-3.5 rounded-full py-3.5 bg-[#f97316] active:bg-[#ea580c]"
+        className="mt-3.5 rounded-2xl py-3.5 bg-[#ea580c] active:bg-[#c2410c]"
         textClassName="text-base font-bold tracking-normal"
       />
     </View>

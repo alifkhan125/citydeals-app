@@ -117,12 +117,13 @@ export default function NearbyScreen() {
 
       return {
         id: coupon.id,
-        category: coupon.category?.name || "General",
+        category: coupon.category?.name || coupon.merchant?.category?.name || "General",
         dealHeading: coupon.title,
         dealDescription: coupon.description,
         image: coupon.imageUrl || require("../../../assets/images/placeholder-deal.jpg"),
         isFavorite: isLoggedIn ? savedSet.has(coupon.id) : false,
         merchantName: coupon.merchant?.name || undefined,
+        merchantLogo: coupon.merchant?.logoUrl || null,
         distance: formatDistance(distanceKm),
         distanceKm,
       };

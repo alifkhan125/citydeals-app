@@ -22,6 +22,7 @@ export interface DealItem {
   distance?: string;
   merchantName?: string;
   merchantLogo?: string | null;
+  areaName?: string;
 }
 
 interface DealCardProps {
@@ -75,37 +76,85 @@ export default function DealCard({
         }}
         className="rounded-[22px] overflow-hidden relative"
       >
-        {/* Brand Logo Box (Top-Left like image1.png) */}
+        {/* Brand Logo & Name/Location (Top-Left over Image) */}
         <View
           style={{
             position: "absolute",
             top: 12,
             left: 12,
             zIndex: 25,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.15,
-            shadowRadius: 6,
-            elevation: 4,
+            flexDirection: "row",
+            alignItems: "center",
+            maxWidth: "75%",
           }}
-          className="w-12 h-12 rounded-2xl bg-white p-1 border-2 border-white items-center justify-center overflow-hidden"
         >
-          {deal.merchantLogo ? (
-            <Image
-              source={{ uri: deal.merchantLogo }}
-              style={{ width: "100%", height: "100%", borderRadius: 10 }}
-              contentFit="contain"
-            />
-          ) : (
-            <View className="w-full h-full rounded-xl bg-orange-50 items-center justify-center border border-orange-100">
-              <Text className="text-orange-600 font-black text-sm">
-                {deal.merchantName ? deal.merchantName.slice(0, 4).toUpperCase() : "CD"}
+          {/* Logo Box */}
+          <View
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.18,
+              shadowRadius: 5,
+              elevation: 4,
+            }}
+            className="w-11 h-11 rounded-2xl bg-white p-0.5 border-2 border-white items-center justify-center overflow-hidden flex-shrink-0 mr-2.5"
+          >
+            {deal.merchantLogo ? (
+              <Image
+                source={{ uri: deal.merchantLogo }}
+                style={{ width: "100%", height: "100%", borderRadius: 10 }}
+                contentFit="contain"
+              />
+            ) : (
+              <View className="w-full h-full rounded-xl bg-orange-50 items-center justify-center border border-orange-100">
+                <Text className="text-orange-600 font-black text-xs">
+                  {deal.merchantName ? deal.merchantName.slice(0, 4).toUpperCase() : "CD"}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Business Name & Location beside the logo */}
+          {deal.merchantName || deal.areaName || deal.category ? (
+            <View
+              style={{
+                backgroundColor: "rgba(15, 23, 42, 0.78)",
+                paddingHorizontal: 10,
+                paddingVertical: 4.5,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: "rgba(255, 255, 255, 0.15)",
+                justifyContent: "center",
+              }}
+            >
+              {deal.merchantName ? (
+                <Text
+                  style={{
+                    color: "#ffffff",
+                    fontSize: 13,
+                    fontWeight: "800",
+                  }}
+                  numberOfLines={1}
+                >
+                  {deal.merchantName}
+                </Text>
+              ) : null}
+              <Text
+                style={{
+                  color: "#cbd5e1",
+                  fontSize: 11,
+                  fontWeight: "500",
+                  marginTop: 1,
+                }}
+                numberOfLines={1}
+              >
+                {[deal.category, deal.areaName].filter(Boolean).join(" • ") || "Local Deal"}
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
 
-        {/* Favorite Heart Button */}
+        {/* Favorite Heart Button (Top-Right over Image) */}
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleFavoriteToggle}
@@ -118,7 +167,7 @@ export default function DealCard({
           />
         </TouchableOpacity>
 
-        {/* Location Distance Badge (Bottom-Left like image1.png & image5.png) */}
+        {/* Location Distance Badge (Bottom-Left like image5.png) */}
         {deal.distance ? (
           <View
             style={{
@@ -168,40 +217,6 @@ export default function DealCard({
 
       {/* Card Info Details */}
       <View className="pt-3.5 pb-1 px-1.5">
-        <View className="flex-row items-center flex-wrap mb-1">
-          {deal.merchantName ? (
-            <Text
-              style={{
-                color: "#ea580c",
-                fontSize: 12,
-                fontWeight: "800",
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-              numberOfLines={1}
-            >
-              {deal.merchantName}
-            </Text>
-          ) : null}
-          {deal.merchantName && deal.category ? (
-            <Text style={{ color: "#cbd5e1", marginHorizontal: 6, fontSize: 10 }}>
-              •
-            </Text>
-          ) : null}
-          {deal.category ? (
-            <Text
-              style={{
-                color: "#64748b",
-                fontSize: 12,
-                fontWeight: "600",
-              }}
-              numberOfLines={1}
-            >
-              {deal.category}
-            </Text>
-          ) : null}
-        </View>
-
         <Text
           style={{
             color: "#0f172a",

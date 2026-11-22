@@ -314,6 +314,7 @@ export default function HomeScreen() {
         distance: formatDistance(distanceMeters ? distanceMeters / 1000 : null) || "",
         merchantName: c.merchant?.name,
         merchantLogo: c.merchant?.logoUrl || null,
+        areaName: c.area?.name,
       };
     });
   }, [serverCoupons, savedSet, coords]);

@@ -124,6 +124,7 @@ export default function NearbyScreen() {
         isFavorite: isLoggedIn ? savedSet.has(coupon.id) : false,
         merchantName: coupon.merchant?.name || undefined,
         merchantLogo: coupon.merchant?.logoUrl || null,
+        areaName: coupon.area?.name,
         distance: formatDistance(distanceKm),
         distanceKm,
       };

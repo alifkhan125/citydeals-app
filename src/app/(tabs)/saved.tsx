@@ -48,6 +48,7 @@ export default function SavedScreen() {
       isFavorite: true,
       merchantName: c.merchant?.name,
       merchantLogo: c.merchant?.logoUrl || null,
+      areaName: c.area?.name,
     }));
   }, [isLoggedIn, serverSavedCoupons]);
 

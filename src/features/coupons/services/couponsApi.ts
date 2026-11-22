@@ -35,8 +35,9 @@ export const couponsApi = {
     return data?.data || data;
   },
 
-  redeemCoupon: async (couponId: string, couponCode: string): Promise<any> => {
-    const { data } = await apiClient.post<any>(`/coupons/${couponId}/redeem`, { couponCode });
+  redeemCoupon: async (couponId: string, couponCode?: string): Promise<any> => {
+    const payload = couponCode ? { couponCode } : {};
+    const { data } = await apiClient.post<any>(`/coupons/${couponId}/redeem`, payload);
     return data?.data || data;
   },
 

@@ -64,8 +64,7 @@ export default function CouponDetailsScreen() {
   const [redemptionAvailableAt, setRedemptionAvailableAt] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now);
   const [isRedeeming, setIsRedeeming] = useState(false);
-  const [isCouponCodeModalVisible, setIsCouponCodeModalVisible] = useState(false);
-  const [couponCodeInput, setCouponCodeInput] = useState("");
+  const [isConfirmRedeemModalVisible, setIsConfirmRedeemModalVisible] = useState(false);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const [shareBaseUrl, setShareBaseUrl] = useState<string | null>(null);
 
@@ -198,22 +197,20 @@ export default function CouponDetailsScreen() {
       return;
     }
 
-    setCouponCodeInput("");
-    setIsCouponCodeModalVisible(true);
+    setIsConfirmRedeemModalVisible(true);
   };
 
-  const executeRedeemCoupon = async (couponCode: string) => {
+  const executeRedeemCoupon = async () => {
     try {
       setIsRedeeming(true);
-      const result = await couponsApi.redeemCoupon(activeCouponId, couponCode);
-      setIsCouponCodeModalVisible(false);
-      setCouponCodeInput("");
+      const result = await couponsApi.redeemCoupon(activeCouponId);
+      setIsConfirmRedeemModalVisible(false);
       setIsRedeemed(true);
       setRedemptionAvailableAt(result?.redemptionAvailableAt || null);
       setNow(Date.now());
       queryClient.invalidateQueries({ queryKey: REDEEMED_COUPONS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-      showToast("Coupon redeemed successfully!");
+      showToast("Coupon redeemed successfully in-store!");
       await handleShareDeal();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to redeem coupon";
@@ -242,15 +239,6 @@ export default function CouponDetailsScreen() {
     } finally {
       setIsRedeeming(false);
     }
-  };
-
-  const handleCouponCodeSubmit = () => {
-    const code = couponCodeInput.trim();
-    if (!code) {
-      toast.error("Enter the coupon code provided by the business.");
-      return;
-    }
-    void executeRedeemCoupon(code);
   };
 
   // Save / Favorite Toggle Handler
@@ -715,46 +703,43 @@ function ensureHttps(url?: string | null): string | null {
         </View>
       </ScrollView>
 
-      {/* Guest Authentication Required Modal */}
+      {/* In-Store Direct Redemption Confirmation Modal (No Coupon Code Required) */}
       <Modal
-        visible={isCouponCodeModalVisible}
+        visible={isConfirmRedeemModalVisible}
         transparent
         animationType="fade"
         statusBarTranslucent
-        onRequestClose={() => !isRedeeming && setIsCouponCodeModalVisible(false)}
+        onRequestClose={() => !isRedeeming && setIsConfirmRedeemModalVisible(false)}
       >
         <View style={{ paddingBottom: Math.max(insets.bottom, 24) }} className="flex-1 bg-black/60 items-center justify-center px-5">
-          <View className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl">
-            <Text className="text-xl font-extrabold text-neutral-900">Enter coupon code</Text>
-            <Text className="text-neutral-500 text-sm mt-2 leading-5">
-              Enter the coupon code provided by the business to redeem this offer.
+          <View className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl items-center">
+            <View className="w-14 h-14 rounded-2xl bg-orange-100 items-center justify-center mb-3">
+              <Ionicons name="ticket" size={28} color="#ea580c" />
+            </View>
+            <Text className="text-xl font-extrabold text-neutral-900 text-center">
+              Redeem In-Store
             </Text>
-            <TextInput
-              value={couponCodeInput}
-              onChangeText={(text) =>
-                setCouponCodeInput(text.toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 10))
-              }
-              placeholder="Enter coupon code"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              maxLength={10}
-              editable={!isRedeeming}
-              className="w-full h-12 border border-neutral-200 rounded-xl px-4 mt-5 text-neutral-900 font-semibold tracking-wider"
-            />
-            <View className="flex-row gap-3 mt-5">
+            <Text className="text-neutral-500 text-sm mt-2 text-center leading-5">
+              Please present your phone screen to the store staff or cashier to claim your offer now.
+            </Text>
+            <View className="flex-row gap-3 mt-6 w-full">
               <TouchableOpacity
                 disabled={isRedeeming}
-                onPress={() => setIsCouponCodeModalVisible(false)}
+                onPress={() => setIsConfirmRedeemModalVisible(false)}
                 className="flex-1 rounded-xl bg-neutral-100 py-3.5 items-center"
               >
                 <Text className="text-neutral-700 font-bold">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 disabled={isRedeeming}
-                onPress={handleCouponCodeSubmit}
+                onPress={() => void executeRedeemCoupon()}
                 className="flex-1 rounded-xl bg-orange-500 py-3.5 items-center"
               >
-                {isRedeeming ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold">Verify</Text>}
+                {isRedeeming ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text className="text-white font-bold">Redeem Now</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

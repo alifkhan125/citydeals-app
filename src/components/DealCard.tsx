@@ -114,16 +114,10 @@ export default function DealCard({
             )}
           </View>
 
-          {/* Business Name & Location beside the logo */}
+          {/* Business Name & Location beside the logo (no background box) */}
           {deal.merchantName || deal.areaName || deal.category ? (
             <View
               style={{
-                backgroundColor: "rgba(15, 23, 42, 0.78)",
-                paddingHorizontal: 10,
-                paddingVertical: 4.5,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: "rgba(255, 255, 255, 0.15)",
                 justifyContent: "center",
               }}
             >
@@ -131,8 +125,11 @@ export default function DealCard({
                 <Text
                   style={{
                     color: "#ffffff",
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: "800",
+                    textShadowColor: "rgba(0, 0, 0, 0.85)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 4,
                   }}
                   numberOfLines={1}
                 >
@@ -141,10 +138,13 @@ export default function DealCard({
               ) : null}
               <Text
                 style={{
-                  color: "#cbd5e1",
+                  color: "#f1f5f9",
                   fontSize: 11,
-                  fontWeight: "500",
+                  fontWeight: "600",
                   marginTop: 1,
+                  textShadowColor: "rgba(0, 0, 0, 0.85)",
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 3,
                 }}
                 numberOfLines={1}
               >

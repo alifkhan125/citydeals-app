@@ -19,16 +19,16 @@ export default function BirthdayGiftScreen() {
     try {
       const result = await claimMutation.mutateAsync(id);
       setClaimedCode(result.claim.claimCode ?? null);
-      Alert.alert(result.alreadyClaimed ? "Already claimed" : "Gift claimed", result.alreadyClaimed ? "You already claimed this gift." : "Show this code to the business when you redeem your gift.");
+      Alert.alert(result.alreadyClaimed ? "Already claimed" : "Freebie! claimed 🎁", result.alreadyClaimed ? "You already claimed this Freebie! offer." : "Show this code to the business to claim your free item with zero purchase!");
     } catch (error: any) {
-      Alert.alert("Unable to claim gift", error?.response?.data?.message || "This gift is available only on your birthday.");
+      Alert.alert("Unable to claim Freebie!", error?.response?.data?.message || "This freebie offer is available only on your birthday week.");
     }
   };
 
   return <View className="flex-1 bg-neutral-50">
     <StatusBar style="light" />
-    <CurvedHeader title="Birthday Gift" showBackButton />
-    {isLoading ? <View className="flex-1 items-center justify-center"><ActivityIndicator color="#ea580c" size="large" /></View> : isError ? <View className="flex-1 items-center justify-center px-8"><Ionicons name="cloud-offline-outline" size={48} color="#ea580c" /><Text className="text-lg font-bold text-neutral-900 mt-4">Could not load your gift</Text><TouchableOpacity onPress={() => refetch()} className="bg-orange-500 rounded-full px-6 py-3 mt-5"><Text className="text-white font-bold">Try again</Text></TouchableOpacity></View> : <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={() => { void refetch(); }} tintColor="#ea580c" colors={["#ea580c"]} />}>
+    <CurvedHeader title="Freebie! 🎁" showBackButton />
+    {isLoading ? <View className="flex-1 items-center justify-center"><ActivityIndicator color="#ea580c" size="large" /></View> : isError ? <View className="flex-1 items-center justify-center px-8"><Ionicons name="cloud-offline-outline" size={48} color="#ea580c" /><Text className="text-lg font-bold text-neutral-900 mt-4">Could not load Freebie! offers</Text><TouchableOpacity onPress={() => refetch()} className="bg-orange-500 rounded-full px-6 py-3 mt-5"><Text className="text-white font-bold">Try again</Text></TouchableOpacity></View> : <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={() => { void refetch(); }} tintColor="#ea580c" colors={["#ea580c"]} />}>
       {data?.items?.length ? (
         <View style={isWide ? { flexDirection: "row", flexWrap: "wrap", gap: 16, justifyContent: "space-between" } : undefined}>
           {data.items.map((gift) => {
@@ -47,7 +47,7 @@ export default function BirthdayGiftScreen() {
               >
                 <DealCard
                   deal={deal}
-                  actionTitle={claimed ? (gift.claimStatus === "REDEEMED" ? "Redeemed" : "Already claimed") : data.isBirthday ? "Claim Birthday Gift" : `Available in ${data.daysUntilBirthday ?? 1} day${data.daysUntilBirthday === 1 ? "" : "s"}`}
+                  actionTitle={claimed ? (gift.claimStatus === "REDEEMED" ? "Redeemed" : "Already claimed") : data.isBirthday ? "Claim Freebie! 🎁" : `Available in ${data.daysUntilBirthday ?? 1} day${data.daysUntilBirthday === 1 ? "" : "s"}`}
                   actionDisabled={claimed || !data.isBirthday}
                   actionLoading={claimMutation.isPending}
                   onPressOpen={() => { if (!claimed && data.isBirthday) void claim(gift.id); }}
@@ -58,7 +58,7 @@ export default function BirthdayGiftScreen() {
             );
           })}
         </View>
-      ) : <View className="items-center py-10"><Ionicons name="gift-outline" size={48} color="#f97316" /><Text className="text-neutral-600 mt-3 text-center">No birthday gifts are available right now.</Text></View>}
+      ) : <View className="items-center py-10"><Ionicons name="gift-outline" size={48} color="#f97316" /><Text className="text-neutral-600 mt-3 text-center">No Freebie! offers are available right now.</Text></View>}
     </ScrollView>}
   </View>;
 }

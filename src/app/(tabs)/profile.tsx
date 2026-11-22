@@ -353,11 +353,16 @@ export default function ProfileScreen() {
               if (!isLoggedIn) router.push("/(auth)/login" as any);
               else router.push("/screens/birthday-gift" as any);
             }}
-            className="bg-white border border-neutral-100 rounded-2xl px-4 h-[60px] flex-row items-center justify-between"
+            className="bg-white border border-neutral-100 rounded-2xl px-4 py-3 min-h-[64px] flex-row items-center justify-between"
           >
             <View className="flex-row items-center flex-1">
-              <Feather name="gift" size={20} color="#ea580c" />
-              <Text className="text-neutral-800 font-semibold text-base ml-3.5">Birthday Gift</Text>
+              <View className="w-9 h-9 rounded-xl bg-orange-50 items-center justify-center">
+                <Feather name="gift" size={20} color="#ea580c" />
+              </View>
+              <View className="ml-3.5 flex-1">
+                <Text className="text-neutral-900 font-bold text-base">Freebie! 🎁</Text>
+                <Text className="text-xs text-orange-600 font-semibold mt-0.5">100% Free perks, zero purchase</Text>
+              </View>
             </View>
             <Feather name="chevron-right" size={20} color="#9ca3af" />
           </TouchableOpacity>

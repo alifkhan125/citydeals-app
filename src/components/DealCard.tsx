@@ -88,7 +88,7 @@ export default function DealCard({
           back directly on top of the image:
           =======================================================================
         */}
-        {/*
+        
         <View
           style={{
             position: "absolute",
@@ -159,7 +159,7 @@ export default function DealCard({
             </View>
           ) : null}
         </View>
-        */}
+       
 
         {/* Favorite Heart Button (Top-Right over Image) */}
         <TouchableOpacity

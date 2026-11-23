@@ -65,8 +65,9 @@ export default function DealCard({
         elevation: 4,
         width: "100%",
         alignSelf: "center",
+        borderRadius: 14,
       }}
-      className="bg-white rounded-[28px] p-3 mb-5 border border-slate-100"
+      className="bg-white p-3 mb-5 border border-slate-100"
     >
       {/* Banner Container */}
       <View
@@ -74,8 +75,10 @@ export default function DealCard({
           width: "100%",
           aspectRatio: 4 / 5,
           backgroundColor: "#000000",
+          borderRadius: 10,
+          overflow: "hidden",
         }}
-        className="rounded-[22px] overflow-hidden relative"
+        className="relative"
       >
         {/* 
           =======================================================================
@@ -306,13 +309,14 @@ export default function DealCard({
         ) : null}
       </View>
 
-      {/* Action CTA Button (Pill shaped, vibrant orange) */}
+      {/* Action CTA Button */}
       <PrimaryButton
         title={actionTitle || t("common.open", "Open Deal")}
         onPress={() => onPressOpen?.(deal)}
         disabled={actionDisabled}
         loading={actionLoading}
-        className="mt-3.5 rounded-full py-3.5 bg-[#f97316] active:bg-[#ea580c]"
+        style={{ borderRadius: 12 }}
+        className="mt-3.5 py-3.5 bg-[#f97316] active:bg-[#ea580c]"
         textClassName="text-base font-bold tracking-normal text-white"
       />
     </View>

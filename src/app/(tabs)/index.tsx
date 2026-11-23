@@ -311,6 +311,7 @@ export default function HomeScreen() {
         dealDescription: c.description,
         image: c.imageUrl || require("../../../assets/images/placeholder-deal.jpg"),
         isFavorite: isLoggedIn ? savedSet.has(c.id) : false,
+        isPinned: c.isPinned,
         distance: formatDistance(distanceMeters ? distanceMeters / 1000 : null) || "",
         merchantName: c.merchant?.name,
         merchantLogo: c.merchant?.logoUrl || null,

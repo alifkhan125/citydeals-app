@@ -60,6 +60,8 @@ export interface Coupon {
   merchantId?: string;
   categoryId?: string;
   isWhitelisted?: boolean;
+  isPinned?: boolean;
+  pinnedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   merchant?: Merchant | null;

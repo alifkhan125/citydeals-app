@@ -19,6 +19,7 @@ export interface DealItem {
   dealHeading: string;
   dealDescription: string;
   isFavorite?: boolean;
+  isPinned?: boolean;
   distance?: string;
   merchantName?: string;
   merchantLogo?: string | null;
@@ -202,6 +203,44 @@ export default function DealCard({
               {deal.distance.toLowerCase().includes("away")
                 ? deal.distance
                 : `${deal.distance} away`}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Pinned Badge */}
+        {deal.isPinned ? (
+          <View
+            style={{
+              position: "absolute",
+              bottom: 12,
+              right: 12,
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#d97706",
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 20,
+              zIndex: 20,
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.3)",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 4,
+              elevation: 4,
+            }}
+          >
+            <Ionicons name="pin" size={12} color="#ffffff" />
+            <Text
+              style={{
+                color: "#ffffff",
+                fontSize: 11,
+                fontWeight: "800",
+                marginLeft: 4,
+                letterSpacing: 0.3,
+              }}
+            >
+              PINNED
             </Text>
           </View>
         ) : null}

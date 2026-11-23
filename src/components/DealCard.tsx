@@ -315,7 +315,7 @@ export default function DealCard({
         onPress={() => onPressOpen?.(deal)}
         disabled={actionDisabled}
         loading={actionLoading}
-        style={{ borderRadius: 12 }}
+        style={{ borderRadius: 100 }}
         className="mt-3.5 py-3.5 bg-[#f97316] active:bg-[#ea580c]"
         textClassName="text-base font-bold tracking-normal text-white"
       />

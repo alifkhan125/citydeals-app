@@ -60,8 +60,8 @@ export default function DealCard({
       style={{
         shadowColor: "#000000",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
+        shadowOpacity: 0.08,
+        shadowRadius: 14,
         elevation: 4,
         width: "100%",
         alignSelf: "center",
@@ -77,7 +77,15 @@ export default function DealCard({
         }}
         className="rounded-[22px] overflow-hidden relative"
       >
-        {/* Brand Logo & Name/Location (Top-Left over Image) */}
+        {/* 
+          =======================================================================
+          [COMMENTED OUT AS REQUESTED]
+          Floating Business Logo, Name & Location overlay over image.
+          You can uncomment this block anytime if you want the logo box & details 
+          back directly on top of the image:
+          =======================================================================
+        */}
+        {/*
         <View
           style={{
             position: "absolute",
@@ -89,7 +97,6 @@ export default function DealCard({
             maxWidth: "75%",
           }}
         >
-          {/* Logo Box */}
           <View
             style={{
               shadowColor: "#000",
@@ -115,13 +122,8 @@ export default function DealCard({
             )}
           </View>
 
-          {/* Business Name & Location beside the logo (no background box) */}
           {deal.merchantName || deal.areaName || deal.category ? (
-            <View
-              style={{
-                justifyContent: "center",
-              }}
-            >
+            <View style={{ justifyContent: "center" }}>
               {deal.merchantName ? (
                 <Text
                   style={{
@@ -154,6 +156,7 @@ export default function DealCard({
             </View>
           ) : null}
         </View>
+        */}
 
         {/* Favorite Heart Button (Top-Right over Image) */}
         <TouchableOpacity
@@ -168,22 +171,22 @@ export default function DealCard({
           />
         </TouchableOpacity>
 
-        {/* Location Distance Badge (Bottom-Left like image5.png) */}
+        {/* Location Distance Badge (Top-Right under Favorite Button like reference image) */}
         {deal.distance ? (
           <View
             style={{
               position: "absolute",
-              bottom: 12,
-              left: 12,
+              top: 58,
+              right: 12,
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: "rgba(15, 23, 42, 0.85)",
-              paddingHorizontal: 12,
-              paddingVertical: 6,
+              backgroundColor: "rgba(15, 23, 42, 0.88)",
+              paddingHorizontal: 10,
+              paddingVertical: 4.5,
               borderRadius: 20,
               zIndex: 20,
               borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.2)",
+              borderColor: "rgba(255, 255, 255, 0.15)",
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.25,
@@ -191,24 +194,22 @@ export default function DealCard({
               elevation: 4,
             }}
           >
-            <Ionicons name="navigate-sharp" size={11} color="#ea580c" />
+            <Ionicons name="location-sharp" size={12} color="#ffffff" />
             <Text
               style={{
                 color: "#ffffff",
-                fontSize: 12,
+                fontSize: 11.5,
                 fontWeight: "700",
-                marginLeft: 5,
+                marginLeft: 3.5,
               }}
             >
-              {deal.distance.toLowerCase().includes("away")
-                ? deal.distance
-                : `${deal.distance} away`}
+              {deal.distance}
             </Text>
           </View>
         ) : null}
 
         {/* Pinned Badge */}
-        {deal.isPinned ? (
+        {/* {deal.isPinned ? (
           <View
             style={{
               position: "absolute",
@@ -243,7 +244,7 @@ export default function DealCard({
               PINNED
             </Text>
           </View>
-        ) : null}
+        ) : null} */}
 
         {/* Poster Image */}
         <Image
@@ -254,27 +255,48 @@ export default function DealCard({
         />
       </View>
 
-      {/* Card Info Details */}
+      {/* Card Info Details (Matching reference image typography 100%) */}
       <View className="pt-3.5 pb-1 px-1.5">
+        {/* Merchant Name in uppercase subtle grey */}
+        {deal.merchantName ? (
+          <Text
+            style={{
+              color: "#64748b",
+              fontSize: 13,
+              fontWeight: "700",
+              letterSpacing: 0.5,
+              textTransform: "uppercase",
+              marginBottom: 4,
+            }}
+            numberOfLines={1}
+          >
+            {deal.merchantName}
+          </Text>
+        ) : null}
+
+        {/* Deal Title / Heading in Bold Uppercase */}
         <Text
           style={{
             color: "#0f172a",
-            fontSize: 19,
-            fontWeight: "800",
+            fontSize: 20,
+            fontWeight: "900",
             letterSpacing: -0.3,
-            lineHeight: 24,
+            lineHeight: 25,
+            textTransform: "uppercase",
+            marginBottom: 3,
           }}
           numberOfLines={2}
         >
           {deal.dealHeading}
         </Text>
+
+        {/* Deal Description */}
         {deal.dealDescription ? (
           <Text
             style={{
-              color: "#64748b",
+              color: "#475569",
               fontSize: 14,
               fontWeight: "400",
-              marginTop: 4,
               lineHeight: 20,
             }}
             numberOfLines={2}
@@ -284,14 +306,14 @@ export default function DealCard({
         ) : null}
       </View>
 
-      {/* Action CTA Button */}
+      {/* Action CTA Button (Pill shaped, vibrant orange) */}
       <PrimaryButton
         title={actionTitle || t("common.open", "Open Deal")}
         onPress={() => onPressOpen?.(deal)}
         disabled={actionDisabled}
         loading={actionLoading}
-        className="mt-3.5 rounded-2xl py-3.5 bg-[#ea580c] active:bg-[#c2410c]"
-        textClassName="text-base font-bold tracking-normal"
+        className="mt-3.5 rounded-full py-3.5 bg-[#f97316] active:bg-[#ea580c]"
+        textClassName="text-base font-bold tracking-normal text-white"
       />
     </View>
   );

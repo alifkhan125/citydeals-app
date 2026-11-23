@@ -64,12 +64,12 @@ function formatDistance(distanceKm: number | null): string | undefined {
     return `${meters} m away`;
   }
   if (distanceKm < 10) {
-    return `${distanceKm.toFixed(1)} km away`;
+    return `${distanceKm.toFixed(1)} km`;
   }
   if (distanceKm < 100) {
-    return `${distanceKm.toFixed(1)} km away`;
+    return `${distanceKm.toFixed(1)} km`;
   }
-  return `${Math.round(distanceKm)} km away`;
+  return `${Math.round(distanceKm)} km`;
 }
 
 export default function HomeScreen() {
@@ -388,8 +388,8 @@ export default function HomeScreen() {
                 {isLoggedIn && user?.fullName
                   ? `Hi, ${user.fullName.trim().split(" ")[0]}`
                   : isAutoDetect
-                  ? t("home.nearby_gps", "Nearby Area (GPS)")
-                  : t("home.active_area", "Active Area")}
+                    ? t("home.nearby_gps", "Nearby Area (GPS)")
+                    : t("home.active_area", "Active Area")}
               </Text>
               <View className="flex-row items-center mt-0.5">
                 <Ionicons name="location-sharp" size={16} color="#ea580c" />
@@ -500,16 +500,14 @@ export default function HomeScreen() {
                     <Pressable
                       key={cat.id || cat.slug}
                       onPress={() => setSelectedCategorySlug(cat.slug)}
-                      className={`px-5 py-2.5 rounded-full border flex-row items-center ${
-                        isSelected
-                          ? "bg-orange-500 border-orange-500"
-                          : "bg-slate-100 border-slate-200"
-                      }`}
+                      className={`px-5 py-2.5 rounded-full border flex-row items-center ${isSelected
+                        ? "bg-orange-500 border-orange-500"
+                        : "bg-slate-100 border-slate-200"
+                        }`}
                     >
                       <Text
-                        className={`font-semibold text-base ${
-                          isSelected ? "text-white" : "text-neutral-700"
-                        }`}
+                        className={`font-semibold text-base ${isSelected ? "text-white" : "text-neutral-700"
+                          }`}
                       >
                         {cat.name}
                       </Text>

@@ -63,30 +63,35 @@ export default function DealCardSkeleton({ count = 2 }: DealCardSkeletonProps) {
           </Animated.View>
 
           {/* Card Info Details Skeleton */}
-          <View className="pt-4 pb-1 px-1">
-            {/* Title Line */}
+            <View className="pt-3.5 pb-1 px-1.5">
+              {/* Merchant Name Line */}
+              <Animated.View
+                style={{ opacity: pulseAnim }}
+                className="h-3 bg-neutral-200 rounded-md w-1/3 mb-2"
+              />
+              {/* Title Line */}
+              <Animated.View
+                style={{ opacity: pulseAnim }}
+                className="h-5.5 bg-neutral-200 rounded-lg w-4/5 mb-2"
+              />
+              {/* Description Lines */}
+              <Animated.View
+                style={{ opacity: pulseAnim }}
+                className="h-3.5 bg-neutral-100 rounded-md w-full mb-1.5"
+              />
+              <Animated.View
+                style={{ opacity: pulseAnim }}
+                className="h-3.5 bg-neutral-100 rounded-md w-2/3"
+              />
+            </View>
+
+            {/* Action CTA Button Skeleton */}
             <Animated.View
               style={{ opacity: pulseAnim }}
-              className="h-5 bg-neutral-200 rounded-lg w-3/4 mb-2.5"
-            />
-            {/* Description Lines */}
-            <Animated.View
-              style={{ opacity: pulseAnim }}
-              className="h-3.5 bg-neutral-100 rounded-md w-full mb-1.5"
-            />
-            <Animated.View
-              style={{ opacity: pulseAnim }}
-              className="h-3.5 bg-neutral-100 rounded-md w-2/3"
+              className="h-12 bg-neutral-200 rounded-full w-full mt-3.5"
             />
           </View>
-
-          {/* Action CTA Button Skeleton */}
-          <Animated.View
-            style={{ opacity: pulseAnim }}
-            className="h-12 bg-neutral-200 rounded-full w-full mt-4"
-          />
-        </View>
       ))}
-    </>
-  );
+        </>
+      );
 }

@@ -126,10 +126,10 @@ export default function CouponDetailsScreen() {
     coupon?.redemptionFrequency || "ONE_TIME"
   );
 
-  const canRedeemAgain = canRedeemNow;
   const isPermanentlyRedeemed =
     isRedeemed &&
     coupon?.redemptionFrequency === "ONE_TIME";
+  const canRedeemAgain = isRedeemed && canRedeemNow && !isPermanentlyRedeemed;
 
   useEffect(() => {
     if (!activeCouponId) return;

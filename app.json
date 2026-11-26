@@ -9,6 +9,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
+      "requireFullScreen": true,
       "bundleIdentifier": "ai.citydeals.app",
       "googleServicesFile": "./GoogleService-Info.plist",
       "entitlements": {
@@ -17,6 +18,8 @@
       "buildNumber": "1",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
+        "UIRequiresFullScreen": true,
+        "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
           "remote-notification"
         ],

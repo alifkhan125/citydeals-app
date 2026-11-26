@@ -15,7 +15,7 @@
       "entitlements": {
         "aps-environment": "production"
       },
-      "buildNumber": "1",
+      "buildNumber": "3",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
         "UIRequiresFullScreen": true,
@@ -45,11 +45,9 @@
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_LOCATION",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ],
       "intentFilters": [
         {

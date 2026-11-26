@@ -33,11 +33,6 @@
         "backgroundColor": "#FCF2EF",
         "foregroundImage": "./assets/images/icon.png"
       },
-      "navigationBar": {
-        "visible": "always",
-        "barStyle": "dark-content",
-        "backgroundColor": "#ffffff"
-      },
       "predictiveBackGestureEnabled": false,
       "package": "ai.citydeals.app",
       "versionCode": 3,
@@ -73,6 +68,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
